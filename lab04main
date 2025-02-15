@@ -1,0 +1,73 @@
+import gc
+import pyb
+from pyb import Pin, Timer
+import cotask
+import task_share
+import motor
+import encoder
+from time import sleep_us
+from pyb import USB_VCP
+from pyb import UART
+
+"Blutooth Enable"
+BT_ser = UART(3, 115200)
+pyb.repl_uart(BT_ser)
+
+def main():
+    # Initialize shares. No specific naming convention (yet)
+    centroid = task_share.Share('f', thread_protect=False, name="Centroid")
+
+    # Initialize queues. Queues will be denoted by q_ at the start.
+    q1 = task_share.Queue('f', 120, thread_protect=False,
+                                  overwrite=False, name="Queue 1")
+
+    # Initialize tasks
+    task1 = cotask.Task(leftMotor, name="Left Motor", priority=2,
+                        period=10,profile=True, trace=False, 
+                        shares=(centroid))
+    task2 = cotask.Task(rightMotor, name="Right Motor", priority=3,
+                        period=10,profile=True, trace=False, 
+                        shares=(centroid))
+    task3 = cotask.Task(lineSensor, name="Line Sensor", priority=1,
+                        period=100,profile=True, trace=False, 
+                        shares=(centroid))
+    task4 = cotask.Task(user, name="User Interaction", priority=0,
+                        period=300,profile=True, trace=False, 
+                        shares=())
+    
+    # Add tasks to task list
+    cotask.task_list.append(task1)
+    cotask.task_list.append(task2)
+    cotask.task_list.append(task3)
+    cotask.task_list.append(task4)
+
+    # Run the memory garbage collector to ensure memory is as defragmented as
+    # possible before the real-time scheduler is started
+    gc.collect()
+
+    # Run the scheduler with the chosen scheduling algorithm. Quit if ^C pressed
+    while True:
+        try:
+            cotask.task_list.pri_sched()
+        except KeyboardInterrupt:
+            break
+    print('\n' + str (cotask.task_list))
+    print(task_share.show_all())
+    print(task1.get_trace())
+    print('')
+
+def leftMotor(shares):
+    pass
+
+def rightMotor(shares):
+    pass
+
+def lineSensor(shares):
+    pass
+
+def user(shares):
+    pass
+
+
+if __name__ == "__main__":
+    main()
