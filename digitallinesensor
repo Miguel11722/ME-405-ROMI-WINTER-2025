@@ -1,0 +1,195 @@
+from pyb import Pin
+from time import ticks_us, ticks_diff, sleep
+
+def main():
+    sensor = LineSensor(Pin.cpu.C2,Pin.cpu.A0,Pin.cpu.A1,Pin.cpu.A4,Pin.cpu.B0,
+                        Pin.cpu.C1,Pin.cpu.C0,Pin.cpu.C3)
+    sensor.calibrate()
+    input("are you over the line?")
+    try:
+        while True:
+            print(sensor.read())
+            sleep(1)
+    except KeyboardInterrupt:
+        print(sensor.read())
+
+    
+class LineSensor:
+    '''A line sensor interface encapsulated in a Python class. Works with
+    line sensors on the Romi. For a 7 sensor DIGITAL array.'''
+
+    def __init__(self,CTRL,pin1,pin3,pin5,pin7,pin9,pin11,pin13):
+        '''Initializes a new LineSensor object.'''
+        self.CTRL = Pin(CTRL, mode = Pin.OUT_PP, value = 0)
+        # Create a list of all pins to iterate through.
+        self.pins = [Pin(pin1, mode = Pin.OUT_PP, value = 0),
+                     Pin(pin3, mode = Pin.OUT_PP, value = 0),
+                     Pin(pin5, mode = Pin.OUT_PP, value = 0),
+                     Pin(pin7, mode = Pin.OUT_PP, value = 0),
+                     Pin(pin9, mode = Pin.OUT_PP, value = 0),
+                     Pin(pin11, mode = Pin.OUT_PP, value = 0),
+                     Pin(pin13, mode = Pin.OUT_PP, value = 0),]
+        self.blackTime = [0 for n in range(7)] # time for sensor to read black, ticks
+        self.whiteTime = [0 for n in range(7)] # time for sensor to read white, ticks
+
+    def calibrate(self):
+        self.CTRL.high()
+        timeHigh = [0 for n in range(7)] # Time the pin has been high
+        downTime = [0.0 for n in range(7)] # Time the pin takes to go low (ms)
+
+
+        input("press ENTER to read white")
+        
+        # Set pins high
+        for i in range(7):
+            self.pins[i].high() 
+            timeHigh[i] = ticks_us()
+            
+        # Set pins low and see how long it takes for them to go low. Longer
+        # time means a darker reading/less reflectance
+        for i in range(7):
+            # The pins need to be set high for at least 10 us. Check to make
+            # sure this has happened.
+            if ticks_diff(ticks_us(),timeHigh[i]) < 10:
+                raise KeyboardInterrupt(f"Issue with timing at sensor {(2*i)+1}")
+            downTime[i] = ticks_us()
+            self.pins[i].init(mode = Pin.IN) # Sets pin to input
+        
+        # Checking for pins to go low. Checks each pin and then skips any pins
+        # that have already gone low in subsequent runs.
+        pinCount = [1 for n in range(7)]
+        while True:
+            for i in range(7):
+                # Skip pins that are still high or pins that have been read.
+                if self.pins[i].value() == 1 or pinCount[i] == 0:
+                    continue
+                # Read pin time for pins that have not been read
+                elif self.pins[i].value() == 0:
+                    downTime[i] = ticks_diff(ticks_us(),downTime[i])
+                    pinCount[i] = 0
+            if sum(pinCount) == 0:
+                break
+
+        for i in range(7):
+            self.pins[i].init(mode = Pin.OUT_PP) # Sets pin back to output
+
+        # Get the average time for the pins to go low and call that the
+        # time to read a white surface
+        for i in range(7):
+            self.whiteTime[i] = downTime[i]
+
+        # Reading black
+        input("press ENTER to read black")
+        # Set pins high
+        for i in range(7):
+            self.pins[i].high() 
+            timeHigh[i] = ticks_us()
+            
+        # Set pins low and see how long it takes for them to go low. Longer
+        # time means a darker reading/less reflectance
+        for i in range(7):
+            # The pins need to be set high for at least 10 us. Check to make
+            # sure this has happened.
+            if ticks_diff(ticks_us(),timeHigh[i]) < 10:
+                raise KeyboardInterrupt(f"Issue with timing at sensor {(2*i)+1}")
+            downTime[i] = ticks_us()
+            self.pins[i].init(mode = Pin.IN) # Sets pin to input
+        
+        # Checking for pins to go low. Checks each pin and then skips any pins
+        # that have already gone low in subsequent runs.
+        pinCount = [1 for n in range(7)]
+        while True:
+            for i in range(7):
+                # Skip pins that are still high or pins that have been read.
+                if self.pins[i].value() == 1 or pinCount[i] == 0:
+                    continue
+                # Read pin time for pins that have not been read
+                elif self.pins[i].value() == 0:
+                    downTime[i] = ticks_diff(ticks_us(),downTime[i])
+                    pinCount[i] = 0
+            if sum(pinCount) == 0:
+                break
+
+        for i in range(7):
+            self.pins[i].init(mode = Pin.OUT_PP) # set pins back to output
+       
+        # Get the average time for the pins to go low and call that the
+        # time to read a black surface
+        for i in range(7):
+            self.blackTime[i] = downTime[i]
+        return
+
+    def read(self):
+        '''Reads the line sensor array and returns the centroid of the line
+        sensor as a value away from 0, where 0 is the middle of the sensor
+        (sensor 7 for our sensor array).
+        Because this is a digital sensor, we must drive the pins high and
+        measure how long it takes for the pins to go low when they turn to an
+        input.'''
+        self.centroid = 0
+        timeHigh = [0 for n in range(7)] # Time the pin has been high
+        downTime = [0.0 for n in range(7)] # Time the pin takes to go low (ms)
+
+        # Set pins high
+        for i in range(7):
+            self.pins[i].high() 
+            timeHigh[i] = ticks_us()
+            
+        # Set pins low and see how long it takes for them to go low. Longer
+        # time means a darker reading/less reflectance
+        for i in range(7):
+            # The pins need to be set high for at least 10 us. Check to make
+            # sure this has happened.
+            if ticks_diff(ticks_us(),timeHigh[i]) < 10:
+                raise KeyboardInterrupt(f"Issue with timing at sensor {(2*i)+1}")
+            downTime[i] = ticks_us()
+            self.pins[i].init(mode = Pin.IN) # Sets pin to input
+        
+        # Checking for pins to go low. Checks each pin and then skips any pins
+        # that have already gone low in subsequent runs.
+        pinCount = [1 for n in range(7)]
+        while True:
+            for i in range(7):
+                # Skip pins that are still high or pins that have been read.
+                if self.pins[i].value() == 1 or pinCount[i] == 0:
+                    continue
+                # Read pin time for pins that have not been read
+                elif self.pins[i].value() == 0:
+                    downTime[i] = ticks_diff(ticks_us(),downTime[i])
+                    pinCount[i] = 0
+            if sum(pinCount) == 0:
+                break
+
+        for i in range(7):
+            self.pins[i].init(mode = Pin.OUT_PP) # Sets pin back to output
+
+        normalizedTime = [0 for n in range(7)]
+        # Normalizing the times to output 1 for black and 0 for white. Also
+        # accounting for values that may have landed outside the average black/
+        # white times
+        for i in range(7):
+            normalizedTime[i] = (downTime[i]-self.whiteTime[i])/\
+                                (self.blackTime[i]-self.whiteTime[i])
+            if normalizedTime[i] > 1:
+                normalizedTime[i] = 1
+            elif normalizedTime[i] < 0:
+                normalizedTime[i] = 0
+
+        # Centroid calculations. x bar is the sensor location, area is the time
+        # taken to go low.
+        
+        numerator = [0 for n in range(7)]
+        for i in range(7):
+            numerator[i] = normalizedTime[i]*(i-3)
+        
+        self.centroid = sum(numerator)/sum(normalizedTime)
+
+        return self.centroid
+
+    def readEach(self):
+        '''Returns a list of the times each sensor took to go low. Not yet
+        implemented.'''
+        pass
+
+if __name__ == "__main__":
+    main()
