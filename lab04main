@@ -9,9 +9,6 @@ from time import sleep_us
 from pyb import USB_VCP
 from pyb import UART
 import digitallinesensor
-import time
-import matplotlib.pyplot as plt
-
 
 "Blutooth Enable"
 BT_ser = UART(3, 115200)
@@ -23,23 +20,20 @@ def main():
 
     # Initialize tasks
     task1 = cotask.Task(rightMotor, name="Right Motor", priority=3,
-                        period=20,profile=True, trace=False, 
+                        period=100,profile=True, trace=False, 
                         shares=(centroid))
     task2 = cotask.Task(leftMotor, name="Left Motor", priority=2,
-                        period=20,profile=True, trace=False, 
+                        period=100,profile=True, trace=False, 
                         shares=(centroid))
     task3 = cotask.Task(lineSensor, name="Line Sensor", priority=1,
                         period=100,profile=True, trace=False, 
                         shares=(centroid))
-    task4 = cotask.Task(user, name="User Interaction", priority=0,
-                        period=500,profile=True, trace=False, 
-                        shares=())
+
     
     # Add tasks to task list
     cotask.task_list.append(task1)
     cotask.task_list.append(task2)
     cotask.task_list.append(task3)
-    cotask.task_list.append(task4)
 
     # Run the memory garbage collector to ensure memory is as defragmented as
     # possible before the real-time scheduler is started
@@ -74,11 +68,15 @@ def leftMotor(shares):
             LeftEncoder = encoder.Encoder(8,Pin.cpu.C7,Pin.cpu.C6)
             LeftMotor.disable()
             LeftEncoder.zero()
+            LeftMotor.enable()
+
             leftState = 1
+            print("Going to State 1 LM")
             yield
 
         # Info for PID Controller
         elif leftState ==1:
+            print("At State 1 LM")
             setpoint = 0
             pv = cent.get()  # Initial process variable
             kp = 1.0  # Proportional gain
@@ -92,14 +90,15 @@ def leftMotor(shares):
                                                 previous_error, integral, dt)
             # Update process variable based on control output (simplified)
             pv += control * dt  
-            check = error
+            previous_error = error
             
-            if check < 0 :
-                LeftPWM = 15
-                leftMotor().set_effort(LeftPWM)
-            elif check > 0:
+            if pv < 0 :
+                LeftPWM = 50
+                leftMotor.set_effort(LeftPWM)
+            elif pv > 0:
                 LeftPWM = 10
-                leftMotor().set_effort(LeftPWM)
+                leftMotor.set_effort(LeftPWM)
+            yield 
                 
 def rightMotor(shares):
     cent = shares
@@ -120,11 +119,14 @@ def rightMotor(shares):
             RightEncoder = encoder.Encoder(3,Pin.cpu.B5,Pin.cpu.B4)
             RightMotor.disable()
             RightEncoder.zero()
+            RightMotor.enable()
+            print("Going to State 1 RM")
             rightState = 1
             yield
 
         # State 1: reacting to centroid
         elif rightState ==1:
+            print("At State 1 RM")
             setpoint = 0
             pv = cent.get()  # Initial process variable
             kp = 1.0  # Proportional gain
@@ -138,26 +140,29 @@ def rightMotor(shares):
                                                 previous_error, integral, dt)
             # Update process variable based on control output (simplified)
             pv += control * dt  
-            check = error
+            previous_error = error
             
-            if check < 0 :
-                RightPWM = 15
-                rightMotor().set_effort(RightPWM)
-            elif check > 0:
+            if pv < 0 :
                 RightPWM = 10
-                rightMotor().set_effort(RightPWM)
+                rightMotor.set_effort(RightPWM)
+            elif pv > 0:
+                RightPWM = 50
+                rightMotor.set_effort(RightPWM)
+            yield    
 
 def lineSensor(shares):
     cent = shares
     lineState = 0
+    
     while True:
         if lineState == 0:
             sensor = digitallinesensor.LineSensor(Pin.cpu.C2,Pin.cpu.A0,
                                             Pin.cpu.A1,Pin.cpu.A4,Pin.cpu.B0,
                                             Pin.cpu.C1,Pin.cpu.C0,Pin.cpu.C3)
-            sensor.calibrate()
+            lineState = 1
             yield
         if lineState == 1:
+            print("At State 1 LS")
             cent.put(sensor.read())
             yield
             
@@ -168,11 +173,6 @@ def pid_controller(setpoint, pv, kp, ki, kd, previous_error, integral, dt):
     derivative = (error - previous_error) / dt
     control = kp * error + ki * integral + kd * derivative
     return control, error, integral
-
-
-
-def user(shares):
-    pass
 
 
 if __name__ == "__main__":
