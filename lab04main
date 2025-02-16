@@ -8,6 +8,7 @@ import encoder
 from time import sleep_us
 from pyb import USB_VCP
 from pyb import UART
+import digitallinesensor
 
 "Blutooth Enable"
 BT_ser = UART(3, 115200)
@@ -17,22 +18,18 @@ def main():
     # Initialize shares. No specific naming convention (yet)
     centroid = task_share.Share('f', thread_protect=False, name="Centroid")
 
-    # Initialize queues. Queues will be denoted by q_ at the start.
-    q1 = task_share.Queue('f', 120, thread_protect=False,
-                                  overwrite=False, name="Queue 1")
-
     # Initialize tasks
-    task1 = cotask.Task(leftMotor, name="Left Motor", priority=2,
-                        period=10,profile=True, trace=False, 
+    task1 = cotask.Task(rightMotor, name="Right Motor", priority=3,
+                        period=20,profile=True, trace=False, 
                         shares=(centroid))
-    task2 = cotask.Task(rightMotor, name="Right Motor", priority=3,
-                        period=10,profile=True, trace=False, 
+    task2 = cotask.Task(leftMotor, name="Left Motor", priority=2,
+                        period=20,profile=True, trace=False, 
                         shares=(centroid))
     task3 = cotask.Task(lineSensor, name="Line Sensor", priority=1,
                         period=100,profile=True, trace=False, 
                         shares=(centroid))
     task4 = cotask.Task(user, name="User Interaction", priority=0,
-                        period=300,profile=True, trace=False, 
+                        period=500,profile=True, trace=False, 
                         shares=())
     
     # Add tasks to task list
@@ -57,13 +54,80 @@ def main():
     print('')
 
 def leftMotor(shares):
-    pass
+    cent = shares
+    leftState = 0
+    while True:
+        if leftState == 0:
+          # Motor Pin Setup
+            LeftEffort = Pin(Pin.cpu.A9, mode = Pin.OUT_PP)
+            LeftEffort.low()
+            
+            # PWM Setup
+            LeftPWM = 10 # PWM, %
+            tim1 = Timer(1, freq = 1000)
+            LeftSpeed = tim1.channel(2, pin=LeftEffort, mode=Timer.PWM,
+                                pulse_width_percent=LeftPWM)
+            LeftMotor = motor.Motor(LeftSpeed,Pin.cpu.A6,Pin.cpu.A7)
+            LeftEncoder = encoder.Encoder(8,Pin.cpu.C7,Pin.cpu.C6)
+            LeftMotor.disable()
+            LeftEncoder.zero()
+            leftState = 1
+            yield
+
+        # State 1: Reacting to centroid
+        if leftState == 1:
+            if cent.get() > 0:
+                LeftPWM += 2
+                leftMotor.set_effort(LeftPWM)
+            elif cent.get() < 0:
+                LeftPWM -= 2
+                leftMotor.set_effort(LeftPWM)
 
 def rightMotor(shares):
-    pass
+    cent = shares
+    rightState = 0
+    while True:
+        if rightState == 0:
+            # Motor Pin Setup
+            RightEffort = Pin(Pin.cpu.A8, mode = Pin.OUT_PP)
+            RightEffort.low()
+
+            # PWM Setup
+            RightPWM = 10 # PWM, %
+            tim1 = Timer(1, freq = 1000)
+            RightSpeed =  tim1.channel(1, pin=RightEffort, mode=Timer.PWM,
+                                pulse_width_percent=RightPWM)
+
+            RightMotor = motor.Motor(RightSpeed,Pin.cpu.B3,Pin.cpu.A10)
+            RightEncoder = encoder.Encoder(3,Pin.cpu.B5,Pin.cpu.B4)
+            RightMotor.disable()
+            RightEncoder.zero()
+            rightState = 1
+            yield
+
+        # State 1: reacting to centroid
+        if rightState == 1:
+            if cent.get() > 0:
+                RightPWM -= 2
+                leftMotor.set_effort(RightPWM)
+            elif cent.get() < 0:
+                RightPWM += 2
+                leftMotor.set_effort(RightPWM)
 
 def lineSensor(shares):
-    pass
+    cent = shares
+    lineState = 0
+    while True:
+        if lineState == 0:
+            sensor = digitallinesensor.LineSensor(Pin.cpu.C2,Pin.cpu.A0,
+                                            Pin.cpu.A1,Pin.cpu.A4,Pin.cpu.B0,
+                                            Pin.cpu.C1,Pin.cpu.C0,Pin.cpu.C3)
+            sensor.calibrate()
+            yield
+        if lineState == 1:
+            cent.put(sensor.read())
+            yield
+
 
 def user(shares):
     pass
