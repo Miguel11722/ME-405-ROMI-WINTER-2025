@@ -9,6 +9,9 @@ from time import sleep_us
 from pyb import USB_VCP
 from pyb import UART
 import digitallinesensor
+import time
+import matplotlib.pyplot as plt
+
 
 "Blutooth Enable"
 BT_ser = UART(3, 115200)
@@ -74,15 +77,30 @@ def leftMotor(shares):
             leftState = 1
             yield
 
-        # State 1: Reacting to centroid
-        if leftState == 1:
-            if cent.get() > 0:
-                LeftPWM += 2
-                leftMotor.set_effort(LeftPWM)
-            elif cent.get() < 0:
-                LeftPWM -= 2
-                leftMotor.set_effort(LeftPWM)
-
+        # Info for PID Controller
+        elif leftState ==1:
+            setpoint = 0
+            pv = cent.get()  # Initial process variable
+            kp = 1.0  # Proportional gain
+            ki = 0.1  # Integral gain
+            kd = 0.05  # Derivative gain
+            previous_error = 0
+            integral = 0
+            dt = 0.1  # Time step
+            
+            control, error, integral = pid_controller(setpoint, pv, kp, ki, kd,
+                                                previous_error, integral, dt)
+            # Update process variable based on control output (simplified)
+            pv += control * dt  
+            check = error
+            
+            if check < 0 :
+                LeftPWM = 15
+                leftMotor().set_effort(LeftPWM)
+            elif check > 0:
+                LeftPWM = 10
+                leftMotor().set_effort(LeftPWM)
+                
 def rightMotor(shares):
     cent = shares
     rightState = 0
@@ -106,13 +124,28 @@ def rightMotor(shares):
             yield
 
         # State 1: reacting to centroid
-        if rightState == 1:
-            if cent.get() > 0:
-                RightPWM -= 2
-                leftMotor.set_effort(RightPWM)
-            elif cent.get() < 0:
-                RightPWM += 2
-                leftMotor.set_effort(RightPWM)
+        elif rightState ==1:
+            setpoint = 0
+            pv = cent.get()  # Initial process variable
+            kp = 1.0  # Proportional gain
+            ki = 0.1  # Integral gain
+            kd = 0.05  # Derivative gain
+            previous_error = 0
+            integral = 0
+            dt = 0.1  # Time step
+            
+            control, error, integral = pid_controller(setpoint, pv, kp, ki, kd,
+                                                previous_error, integral, dt)
+            # Update process variable based on control output (simplified)
+            pv += control * dt  
+            check = error
+            
+            if check < 0 :
+                RightPWM = 15
+                rightMotor().set_effort(RightPWM)
+            elif check > 0:
+                RightPWM = 10
+                rightMotor().set_effort(RightPWM)
 
 def lineSensor(shares):
     cent = shares
@@ -127,6 +160,15 @@ def lineSensor(shares):
         if lineState == 1:
             cent.put(sensor.read())
             yield
+            
+# PID CONTROLLER AND RELATED
+def pid_controller(setpoint, pv, kp, ki, kd, previous_error, integral, dt):
+    error = setpoint - pv
+    integral += error * dt
+    derivative = (error - previous_error) / dt
+    control = kp * error + ki * integral + kd * derivative
+    return control, error, integral
+
 
 
 def user(shares):
