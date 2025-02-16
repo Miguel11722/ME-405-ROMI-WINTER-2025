@@ -1,3 +1,4 @@
+
 import gc
 import pyb
 from pyb import Pin, Timer
@@ -71,12 +72,10 @@ def leftMotor(shares):
             LeftMotor.enable()
 
             leftState = 1
-            print("Going to State 1 LM")
             yield
 
         # Info for PID Controller
         elif leftState ==1:
-            print("At State 1 LM")
             setpoint = 0
             pv = cent.get()  # Initial process variable
             kp = 1.0  # Proportional gain
@@ -94,10 +93,10 @@ def leftMotor(shares):
             
             if pv < 0 :
                 LeftPWM = 50
-                leftMotor.set_effort(LeftPWM)
+                LeftMotor.set_effort(LeftPWM)
             elif pv > 0:
                 LeftPWM = 10
-                leftMotor.set_effort(LeftPWM)
+                LeftMotor.set_effort(LeftPWM)
             yield 
                 
 def rightMotor(shares):
@@ -120,13 +119,11 @@ def rightMotor(shares):
             RightMotor.disable()
             RightEncoder.zero()
             RightMotor.enable()
-            print("Going to State 1 RM")
             rightState = 1
             yield
 
         # State 1: reacting to centroid
         elif rightState ==1:
-            print("At State 1 RM")
             setpoint = 0
             pv = cent.get()  # Initial process variable
             kp = 1.0  # Proportional gain
@@ -144,10 +141,10 @@ def rightMotor(shares):
             
             if pv < 0 :
                 RightPWM = 10
-                rightMotor.set_effort(RightPWM)
+                RightMotor.set_effort(RightPWM)
             elif pv > 0:
                 RightPWM = 50
-                rightMotor.set_effort(RightPWM)
+                RightMotor.set_effort(RightPWM)
             yield    
 
 def lineSensor(shares):
