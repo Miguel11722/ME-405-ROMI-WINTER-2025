@@ -1,0 +1,63 @@
+# The following code is from the starter template provided in the lab
+from pyb import Pin, Timer
+
+def main():
+    RightEffort = Pin(Pin.cpu.A8, mode = Pin.OUT_PP)
+    LeftEffort = Pin(Pin.cpu.A9, mode = Pin.OUT_PP)
+    RightEffort.low()
+    LeftEffort.low()
+    
+    # PWM Setup
+    
+    LeftPWM = 10 # PWM, %
+    RightPWM = 10 # PWM, %
+    tim1 = Timer(1, freq = 1000)
+    RightSpeed =  tim1.channel(1, pin=RightEffort, mode=Timer.PWM,
+                        pulse_width_percent=RightPWM)
+    LeftSpeed = tim1.channel(2, pin=LeftEffort, mode=Timer.PWM,
+                        pulse_width_percent=LeftPWM)
+
+    RightMotor = Motor(RightSpeed,Pin.cpu.B3,Pin.cpu.A10)
+    LeftMotor = Motor(LeftSpeed,Pin.cpu.A6,Pin.cpu.A7)
+    RightMotor.enable()
+    LeftMotor.enable()
+
+    while True:
+        pwm = int(input("what pwm for right motor"))
+        RightMotor.set_effort(pwm)
+        LeftMotor.set_effort(pwm)
+
+
+class Motor: 
+    '''A motor driver interface encapsulated in a Python class. Works with
+     5 motor drivers using separate PWM and direction inputs such as the DRV8838
+     6 drivers present on the Romi chassis from Pololu.'''
+     
+    def __init__(self, PWM, DIR, nSLP):
+        '''Initializes a Motor object'''
+        self.nSLP_pin = Pin(nSLP, mode = Pin.OUT_PP, value = 0)
+        self.PWM_pin = PWM
+        self.DIR_pin = Pin(DIR, mode = Pin.OUT_PP, value = 0)
+    
+    def set_effort(self, effort):
+        '''Sets the present effort requested from the motherboard on the input
+        value between -100 and 100'''
+        if effort < 0:
+            effort = abs(effort)
+            self.DIR_pin.high()
+            self.PWM_pin.pulse_width_percent(effort)
+        else:
+            self.DIR_pin.low()
+            self.PWM_pin.pulse_width_percent(effort)
+        
+    def enable(self):
+        '''Enables the motor driver by taking it out of sleep mode and putting
+        it into brake mode'''
+        self.nSLP_pin.high()
+    
+    def disable(self): 
+        '''Disables the motor driver by taking it into sleep mode'''
+        self.nSLP_pin.low()
+
+if __name__ == "__main__":
+    main()
