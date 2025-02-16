@@ -4,7 +4,13 @@ from time import ticks_us, ticks_diff, sleep
 def main():
     sensor = LineSensor(Pin.cpu.C2,Pin.cpu.A0,Pin.cpu.A1,Pin.cpu.A4,Pin.cpu.B0,
                         Pin.cpu.C1,Pin.cpu.C0,Pin.cpu.C3)
-    sensor.calibrate()
+    white, black = sensor.calibrate()
+    leftEnable = Pin(Pin.cpu.A7, mode = Pin.OUT_PP, value = 0)
+    leftEnable.low()
+    rightEnable = Pin(Pin.cpu.C6, mode = Pin.OUT_PP, value = 0)
+    rightEnable.low()
+    print(f"white time list: {white}\nblack time list: {black}")
+
     input("are you over the line?")
     try:
         while True:
@@ -12,7 +18,6 @@ def main():
             sleep(1)
     except KeyboardInterrupt:
         print(sensor.read())
-
     
 class LineSensor:
     '''A line sensor interface encapsulated in a Python class. Works with
@@ -29,14 +34,21 @@ class LineSensor:
                      Pin(pin9, mode = Pin.OUT_PP, value = 0),
                      Pin(pin11, mode = Pin.OUT_PP, value = 0),
                      Pin(pin13, mode = Pin.OUT_PP, value = 0),]
-        self.blackTime = [0 for n in range(7)] # time for sensor to read black, ticks
-        self.whiteTime = [0 for n in range(7)] # time for sensor to read white, ticks
+        # time for sensors to read white, ticks
+        self.whiteTime = [28848,33848,39491,51636,65938,65045,60298] 
+        # time for sensors to read black, ticks
+        self.blackTime = [277796,335383,406218,539290,554185,395989,301426]
+        self.CTRL.high()
 
     def calibrate(self):
+        '''Calibrates sensor. Used to get the time for each sensor to read
+        black or white ground. Since this takes a while to run, and requires
+        user input, this should be done and then hard coded into blackTime and
+        whiteTime.'''
+
         self.CTRL.high()
         timeHigh = [0 for n in range(7)] # Time the pin has been high
         downTime = [0.0 for n in range(7)] # Time the pin takes to go low (ms)
-
 
         input("press ENTER to read white")
         
@@ -117,7 +129,7 @@ class LineSensor:
         # time to read a black surface
         for i in range(7):
             self.blackTime[i] = downTime[i]
-        return
+        return self.whiteTime, self.blackTime
 
     def read(self):
         '''Reads the line sensor array and returns the centroid of the line
@@ -182,7 +194,10 @@ class LineSensor:
         for i in range(7):
             numerator[i] = normalizedTime[i]*(i-3)
         
-        self.centroid = sum(numerator)/sum(normalizedTime)
+        try:
+            self.centroid = sum(numerator)/sum(normalizedTime)
+        except:
+            self.centroid = 0
 
         return self.centroid
 
