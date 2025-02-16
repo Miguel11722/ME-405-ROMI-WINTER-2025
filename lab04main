@@ -5,7 +5,6 @@ import cotask
 import task_share
 import motor
 import encoder
-from time import sleep_us
 from pyb import USB_VCP
 from pyb import UART
 import digitallinesensor
@@ -19,14 +18,14 @@ def main():
     centroid = task_share.Share('f', thread_protect=False, name="Centroid")
 
     # Initialize tasks
-    task1 = cotask.Task(rightMotor, name="Right Motor", priority=3,
-                        period=50,profile=True, trace=False, 
-                        shares=(centroid))
-    task2 = cotask.Task(leftMotor, name="Left Motor", priority=2,
-                        period=50,profile=True, trace=False, 
-                        shares=(centroid))
-    task3 = cotask.Task(lineSensor, name="Line Sensor", priority=1,
+    task1 = cotask.Task(rightMotor, name="Right Motor", priority=2,
                         period=100,profile=True, trace=False, 
+                        shares=(centroid))
+    task2 = cotask.Task(leftMotor, name="Left Motor", priority=1,
+                        period=100,profile=True, trace=False, 
+                        shares=(centroid))
+    task3 = cotask.Task(lineSensor, name="Line Sensor", priority=0,
+                        period=150,profile=True, trace=False, 
                         shares=(centroid))
 
     
