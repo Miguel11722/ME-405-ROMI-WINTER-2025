@@ -4,11 +4,12 @@ from time import ticks_us, ticks_diff, sleep
 def main():
     sensor = LineSensor(Pin.cpu.C2,Pin.cpu.A0,Pin.cpu.A1,Pin.cpu.A4,Pin.cpu.B0,
                         Pin.cpu.C1,Pin.cpu.C0,Pin.cpu.C3)
-    white, black = sensor.calibrate()
     leftEnable = Pin(Pin.cpu.A7, mode = Pin.OUT_PP, value = 0)
     leftEnable.low()
     rightEnable = Pin(Pin.cpu.C6, mode = Pin.OUT_PP, value = 0)
     rightEnable.low()
+    white, black = sensor.calibrate()
+    
     print(f"white time list: {white}\nblack time list: {black}")
 
     input("are you over the line?")
@@ -35,9 +36,9 @@ class LineSensor:
                      Pin(pin11, mode = Pin.OUT_PP, value = 0),
                      Pin(pin13, mode = Pin.OUT_PP, value = 0),]
         # time for sensors to read white, ticks
-        self.whiteTime = [28848,33848,39491,51636,65938,65045,60298] 
+        self.whiteTime = [39629, 47585, 59818, 82895, 106682, 101266, 89801] 
         # time for sensors to read black, ticks
-        self.blackTime = [277796,335383,406218,539290,554185,395989,301426]
+        self.blackTime = [435095,504056,580056,773612,944975,809731,706226]
         self.CTRL.high()
 
     def calibrate(self):
