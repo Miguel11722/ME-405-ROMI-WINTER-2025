@@ -1,0 +1,26 @@
+# Driver for a BNO055 IMU
+
+from pyb import I2C
+
+class IMU:
+    def __init__(self,I2C):
+        self.I2C = I2C      # preconfigured I2C object
+        self.addr = 0x29    # ??? 
+
+    def mode(self,mode):
+        '''Changes the IMU fusion operation mode. The input "mode" is a string 
+        denoting the desired operating mode. The mode must be set to CONFIG
+        before being able to be set to any other operation mode.'''
+        modeDict = {"IMU":0b1000,"COMPASS":0b1001,"M4G":0b1010,
+                    "NDOF_FMC_OFF":0b1011,"NDOF":0b1100}
+        CONFIG = 0b0000
+        OPR_MODE = 0x3d
+        self.I2C.mem_write(CONFIG,i2caddr,OPR_MODE)
+        self.I2C.mem_write(modeDict[mode],i2caddr,OPR_MODE)
+        return
+    
+    def calib_byte(self):
+        '''Returns the calibration status byte'''
+        self.calbyte = 0b00000000
+        self.I2C.mem_read(self.calbyte, addr, memaddr)
+    
