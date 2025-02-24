@@ -90,10 +90,17 @@ class IMU:
         self.yawRate    = ((buffer[5]*(2**8))+ buffer[4])
         return self.pitchRate, self.rollRate, self.yawRate        
 
-
     def headRate(self):
         '''Returns the heading rate of the IMU in rad/s'''
         buffer = bytearray(2)
         self.I2C.mem_read(buffer, self.addr, 0x18)
         self.yawRate  = ((buffer[1]*(2**8))+ buffer[0])
         return self.yawRate
+    
+    def findNorth(self):
+        '''Returns the x and y components of the magnetic field in microTesla'''
+        buffer = bytearray(4)
+        self.I2C.mem_read(buffer, self.addr, 0x0E)
+        self.magx = ((buffer[1]*(2**8))+ buffer[0])/16
+        self.magy = ((buffer[3]*(2**8))+ buffer[2])/16
+        return self.magx, self.magy
