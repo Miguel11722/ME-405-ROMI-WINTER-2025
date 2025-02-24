@@ -1,0 +1,41 @@
+from pyb import UART
+import pyb
+from pyb import Pin, Timer, I2C
+from time import sleep,sleep_ms
+from imu import IMU
+
+"Blutooth Enable"
+BT_ser = UART(3, 115200)
+pyb.repl_uart(BT_ser)
+
+leftEnable = Pin(Pin.cpu.A7, mode = Pin.OUT_PP, value = 0)
+leftEnable.low()
+rightEnable = Pin(Pin.cpu.C6, mode = Pin.OUT_PP, value = 0)
+rightEnable.low()    
+    
+i2c=I2C(1,I2C.CONTROLLER)
+i2c.init(I2C.CONTROLLER, baudrate = 100000)
+ready = i2c.is_ready(0x28)
+print("Is it ready: ", ready)
+print(i2c.scan())
+
+bno = IMU(i2c)
+bno.mode("CONFIG")
+input("ready to calibrate?")
+bno.mode("NDOF")
+sys, gyro, accel, mag = bno.calibration_byte()
+print(f"System: {sys}, Gyrometer: {gyro}, Accelerometer:{accel},",
+          f" Magnetometer: {mag}")
+sleep(1)
+
+while ~((sys == 3) and (gyro == 3) and (accel == 3) and (mag == 3)):
+    sys, gyro, accel, mag = bno.calibration_byte()
+    print(f"System: {sys}, Gyrometer: {gyro}, Accelerometer:{accel},",
+          f" Magnetometer: {mag}")
+    sleep(1)
+
+print("CALIBRATED!!!!")
+print(f"System: {sys}, Gyrometer: {gyro}, Accelerometer:{accel}, \
+      Magnetometer: {mag}")
+
+
