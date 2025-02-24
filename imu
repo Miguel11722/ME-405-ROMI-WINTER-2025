@@ -7,6 +7,9 @@ class IMU:
     def __init__(self,I2C):
         self.I2C = I2C      # preconfigured I2C object
         self.addr = 0x28
+        # set up units. Euler angles in radians, angular rate in rad/s, and
+        # acceleration in m/s^2
+        self.I2C.mem_write(0b00000110,self.addr,0x3B) 
 
     def mode(self,mode):
         '''Changes the IMU fusion operation mode. The input "mode" is a string 
@@ -50,6 +53,47 @@ class IMU:
         self.coef=bytearray.fromHex(coefString)
         self.I2C.mem_write(self.coef,self.addr,0x55)
 
-    
+    def fullEuler(self):
+        '''Gets a full set of Euler angles for orientation from the IMU. Returns
+        in radians.'''
+        buffer = bytearray(6)
+        self.I2C.mem_read(buffer, self.addr, 0x1A)
+        self.pitch  = ((buffer[1]*(2**8))+ buffer[0])/900
+        self.roll   = ((buffer[3]*(2**8))+ buffer[2])/900
+        self.yaw    = ((buffer[5]*(2**8))+ buffer[4])/900
+        return self.pitch, self.roll, self.yaw
 
+    def heading(self):
+        '''Gets just the heading (yaw) Euler angle in radians.'''
+        buffer = bytearray(2)
+        self.I2C.mem_read(buffer, self.addr, 0x1E)
+        self.yaw  = ((buffer[1]*(2**8))+ buffer[0])/900
+        return self.yaw
+
+    def quaternion(self):
+        '''Returns the quaternion of orientation. Unitless.'''
+        buffer = bytearray(8)
+        self.I2C.mem_read(buffer, self.addr, 0x20)
+        self.w  = ((buffer[1]*(2**8))+ buffer[0])
+        self.x  = ((buffer[3]*(2**8))+ buffer[2])
+        self.y  = ((buffer[5]*(2**8))+ buffer[4])
+        self.z  = ((buffer[7]*(2**8))+ buffer[6])
+
+        return self.w, self.x, self.y, self.z
     
+    def fullAngular(self):
+        '''Returns x, y, and z angular velocities in rad/s'''
+        buffer = bytearray(6)
+        self.I2C.mem_read(buffer, self.addr, 0x14)
+        self.pitchRate  = ((buffer[1]*(2**8))+ buffer[0])
+        self.rollRate   = ((buffer[3]*(2**8))+ buffer[2])
+        self.yawRate    = ((buffer[5]*(2**8))+ buffer[4])
+        return self.pitchRate, self.rollRate, self.yawRate        
+
+
+    def headRate(self):
+        '''Returns the heading rate of the IMU in rad/s'''
+        buffer = bytearray(2)
+        self.I2C.mem_read(buffer, self.addr, 0x18)
+        self.yawRate  = ((buffer[1]*(2**8))+ buffer[0])
+        return self.yawRate
