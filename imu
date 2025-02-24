@@ -1,26 +1,55 @@
 # Driver for a BNO055 IMU
 
 from pyb import I2C
+from time import sleep_ms
 
 class IMU:
     def __init__(self,I2C):
         self.I2C = I2C      # preconfigured I2C object
-        self.addr = 0x29    # ??? 
+        self.addr = 0x28
 
     def mode(self,mode):
         '''Changes the IMU fusion operation mode. The input "mode" is a string 
         denoting the desired operating mode. The mode must be set to CONFIG
         before being able to be set to any other operation mode.'''
         modeDict = {"IMU":0b1000,"COMPASS":0b1001,"M4G":0b1010,
-                    "NDOF_FMC_OFF":0b1011,"NDOF":0b1100}
-        CONFIG = 0b0000
-        OPR_MODE = 0x3d
-        self.I2C.mem_write(CONFIG,i2caddr,OPR_MODE)
-        self.I2C.mem_write(modeDict[mode],i2caddr,OPR_MODE)
+                    "NDOF_FMC_OFF":0b1011,"NDOF":0b1100,"CONFIG":0b0000}
+        OPR_MODE = 0x3D
+        self.I2C.mem_write(modeDict[mode],self.addr,OPR_MODE)
         return
     
-    def calib_byte(self):
-        '''Returns the calibration status byte'''
-        self.calbyte = 0b00000000
-        self.I2C.mem_read(self.calbyte, addr, memaddr)
+    def calibration_byte(self):
+        '''Returns a parsed version of the calibration status byte as 
+        integers'''
+        buffer = bytearray(1)
+        CALIB_STAT = 0x35
+        self.I2C.mem_read(buffer, self.addr, CALIB_STAT)
+        calbyte = int.from_bytes(buffer,'big')
+        system =    (calbyte & 0b11000000) >> 6
+        gyro =      (calbyte & 0b00110000) >> 4
+        accel =     (calbyte & 0b00001100) >> 2
+        magnet =    (calbyte & 0b00000011)
+        
+        return system, gyro, accel, magnet
+    
+    def write_coef(self):
+        ''''Returns the calibration coefficients for the IMU to the 
+        coefficients.txt file'''
+        self.coef=bytearray(22)
+        self.I2C.mem_read(self.coef,self.addr,0x55)
+        with open("coefficients.txt","w") as f:
+            f.write(self.coef.hex())
+
+    def read_coef(self):
+        ''''Writes the calibration coefficients for the IMU from the
+        coefficients.txt file.'''
+        coefString = ''
+        with open("coefficients.txt","r") as f:
+            coefString = f.read()
+
+        self.coef=bytearray.fromHex(coefString)
+        self.I2C.mem_write(self.coef,self.addr,0x55)
+
+    
+
     
