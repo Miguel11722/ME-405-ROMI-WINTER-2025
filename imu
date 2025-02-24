@@ -28,12 +28,11 @@ class IMU:
         CALIB_STAT = 0x35
         self.I2C.mem_read(buffer, self.addr, CALIB_STAT)
         calbyte = int.from_bytes(buffer,'big')
-        system =    (calbyte & 0b11000000) >> 6
         gyro =      (calbyte & 0b00110000) >> 4
         accel =     (calbyte & 0b00001100) >> 2
         magnet =    (calbyte & 0b00000011)
         
-        return system, gyro, accel, magnet
+        return gyro, accel, magnet
     
     def write_coef(self):
         ''''Returns the calibration coefficients for the IMU to the 
@@ -50,7 +49,7 @@ class IMU:
         with open("coefficients.txt","r") as f:
             coefString = f.read()
 
-        self.coef=bytearray.fromHex(coefString)
+        self.coef=bytearray.fromhex(coefString)
         self.I2C.mem_write(self.coef,self.addr,0x55)
 
     def fullEuler(self):
