@@ -1,109 +1,106 @@
-from pyb import Pin, ADC, UART
-from time import sleep, sleep_us
+# Driver for a BNO055 IMU
 
-def main():
-    "Blutooth Enable"
-    BT_ser = UART(3, 115200)
-    pyb.repl_uart(BT_ser)
-    # For getting calibration values and making sure the code works as planned
+from pyb import I2C
+from time import sleep_ms
+
+class IMU:
+    def __init__(self,I2C):
+        self.I2C = I2C      # preconfigured I2C object
+        self.addr = 0x28
+        # set up units. Euler angles in radians, angular rate in rad/s, and
+        # acceleration in m/s^2
+        self.I2C.mem_write(0b00000110,self.addr,0x3B) 
+
+    def mode(self,mode):
+        '''Changes the IMU fusion operation mode. The input "mode" is a string 
+        denoting the desired operating mode. The mode must be set to CONFIG
+        before being able to be set to any other operation mode.'''
+        modeDict = {"IMU":0b1000,"COMPASS":0b1001,"M4G":0b1010,
+                    "NDOF_FMC_OFF":0b1011,"NDOF":0b1100,"CONFIG":0b0000}
+        OPR_MODE = 0x3D
+        self.I2C.mem_write(modeDict[mode],self.addr,OPR_MODE)
+        return
     
-    leftEnable = Pin(Pin.cpu.A7, mode = Pin.OUT_PP, value = 0)
-    leftEnable.low()
-    rightEnable = Pin(Pin.cpu.C6, mode = Pin.OUT_PP, value = 0)
-    rightEnable.low()
-    num = int(input("how many ticks"))
-    sensor = LineSensor(Pin.cpu.C2,Pin.cpu.A0,Pin.cpu.A1,Pin.cpu.A4,Pin.cpu.B0,
-                        Pin.cpu.C1,Pin.cpu.C0,Pin.cpu.C3,num)
-    white, black = sensor.calibrate()
-    
-    print(f"white calibration list: {white}\nblack calibration list: {black}")
-
-    input("are you ready to test?")
-    try:
-        while True:
-            print(sensor.readAll())
-            sleep(1)
-    except KeyboardInterrupt:
-        print(sensor.readAll())
-    
-class LineSensor:
-    '''A line sensor interface encapsulated in a Python class. Works with
-    line sensors on the Romi. For a 7 sensor ANALOG array.'''
-
-    def __init__(self,CTRL,pin1,pin3,pin5,pin7,pin9,pin11,pin13,num):
-        '''Initializes a new LineSensor object.'''
-        self.CTRL = Pin(CTRL, mode = Pin.OUT_PP, value = 1)
-        self.CTRL.high()
-        print("CTRL:", self.CTRL.value())
-        # Create a list of all pins to iterate through.
-        '''self.pins = [Pin(pin1, mode = Pin.ANALOG, value = 0),
-                     Pin(pin3, mode = Pin.ANALOG, value = 0),
-                     Pin(pin5, mode = Pin.ANALOG, value = 0),
-                     Pin(pin7, mode = Pin.ANALOG, value = 0),
-                     Pin(pin9, mode = Pin.ANALOG, value = 0),
-                     Pin(pin11, mode = Pin.ANALOG, value = 0),
-                     Pin(pin13, mode = Pin.ANALOG, value = 0)]'''
-        self.whiteValue = [0 for n in range(7)]
-        self.blackValue = [0 for n in range(7)]
-        self.ADCs = [ADC(pin1),ADC(pin3),ADC(pin5),ADC(pin7),ADC(pin9),ADC(pin11),ADC(pin13)]
-        #self.ADCs = [ADC(self.pins[0]),ADC(self.pins[1]),ADC(self.pins[2]),ADC(self.pins[3]),ADC(self.pins[4]),
-                    #ADC(self.pins[5]),ADC(self.pins[6])]
-
-        # Dimming sensors
-        if num != 0:
-            for i in range(num):
-                sleep_us(1)
-                self.CTRL.low()
-                sleep_us(1)
-                self.CTRL.high()
-
-    def calibrate(self):
-        '''Gets calibration lists for the line sensor'''
-        input("press ENTER to read white")
-
-        for n in range(7):
-            self.whiteValue[n] = self.ADCs[n].read()
-
-        input("press ENTER to read black")
-
-        for n in range(7):
-            self.blackValue[n] = self.ADCs[n].read()
-
-        return self.whiteValue, self.blackValue
-
-    def read(self):
-        '''Reads the line sensor array and returns the centroid of the line
-        sensor as a value away from 0, where 0 is the middle of the sensor
-        (sensor 7 for our sensor array).'''
+    def calibration_byte(self):
+        '''Returns a parsed version of the calibration status byte as 
+        integers'''
+        buffer = bytearray(1)
+        CALIB_STAT = 0x35
+        self.I2C.mem_read(buffer, self.addr, CALIB_STAT)
+        calbyte = int.from_bytes(buffer,'big')
+        gyro =      (calbyte & 0b00110000) >> 4
+        accel =     (calbyte & 0b00001100) >> 2
+        magnet =    (calbyte & 0b00000011)
         
-        normValues = [0 for n in range(7)] # List of ADC values normalized
+        return gyro, accel, magnet
+    
+    def write_coef(self):
+        ''''Returns the calibration coefficients for the IMU to the 
+        coefficients.txt file'''
+        self.coef=bytearray(22)
+        self.I2C.mem_read(self.coef,self.addr,0x55)
+        with open("coefficients.txt","w") as f:
+            f.write(self.coef.hex())
 
-        for n in range(7):
-            normValues[n] = \
-                        (self.ADCs[n].read()-self.whiteValue[n])/\
-                        (self.blackValue[n]-self.whiteValue[n])
-            if normValues[n]>1:
-                normValues[n] = 1
-            elif normValues[n]<0:
-                normValues[n]=0
+    def read_coef(self):
+        ''''Writes the calibration coefficients for the IMU from the
+        coefficients.txt file.'''
+        coefString = ''
+        with open("coefficients.txt","r") as f:
+            coefString = f.read()
 
-        numerator = [0 for n in range(7)]
-        for i in range(7):
-            print(i-3)
-            numerator[i] = normValues[i]*(i-3)
-        
-        try:
-            self.centroid = sum(numerator)/sum(normValues)
-        except:
-            self.centroid = 0
-        return self.centroid
+        self.coef=bytearray.fromhex(coefString)
+        self.I2C.mem_write(self.coef,self.addr,0x55)
 
-    def readAll(self):
-        '''Debugging function to read outputs from all sensors'''
-        self.readings = [0 for n in range(7)]
-        for n in range (7):
-            self.readings = self.ADCs[n].read()
-        return self.readings
+    def fullEuler(self):
+        '''Gets a full set of Euler angles for orientation from the IMU. Returns
+        in radians.'''
+        buffer = bytearray(6)
+        self.I2C.mem_read(buffer, self.addr, 0x1A)
+        self.head   = ((buffer[1]*(2**8))+ buffer[0])/900
+        self.roll   = ((buffer[3]*(2**8))+ buffer[2])/900
+        self.pitch  = ((buffer[5]*(2**8))+ buffer[4])/900
+        return self.head, self.roll, self.pitch
 
-if __name__ == "__main__":
-    main()
+    def heading(self):
+        '''Gets just the heading (yaw) Euler angle in radians.'''
+        buffer = bytearray(2)
+        self.I2C.mem_read(buffer, self.addr, 0x1E)
+        self.head  = ((buffer[1]*(2**8))+ buffer[0])/900
+        return self.head
+
+    def quaternion(self):
+        '''Returns the quaternion of orientation. Unitless.'''
+        buffer = bytearray(8)
+        self.I2C.mem_read(buffer, self.addr, 0x20)
+        self.w  = ((buffer[1]*(2**8))+ buffer[0])
+        self.x  = ((buffer[3]*(2**8))+ buffer[2])
+        self.y  = ((buffer[5]*(2**8))+ buffer[4])
+        self.z  = ((buffer[7]*(2**8))+ buffer[6])
+
+        return self.w, self.x, self.y, self.z
+    
+    def fullAngular(self):
+        # DOUBLE CHECK THAT THESE AREN'T REMAPPED LIKE EULER ANGLES WERE!!!!
+        '''Returns x, y, and z angular velocities in rad/s'''
+        buffer = bytearray(6)
+        self.I2C.mem_read(buffer, self.addr, 0x14)
+        self.pitchRate  = ((buffer[1]*(2**8))+ buffer[0])
+        self.rollRate   = ((buffer[3]*(2**8))+ buffer[2])
+        self.yawRate    = ((buffer[5]*(2**8))+ buffer[4])
+        return self.pitchRate, self.rollRate, self.yawRate        
+
+    def headRate(self):
+        '''Returns the heading rate of the IMU in rad/s'''
+        buffer = bytearray(2)
+        self.I2C.mem_read(buffer, self.addr, 0x18)
+        self.headingRate  = ((buffer[1]*(2**8))+ buffer[0])
+        return self.headingRate
+    
+    def findNorth(self):
+        '''Returns the x and y components of the magnetic field in microTesla'''
+        buffer = bytearray(4)
+        self.I2C.mem_read(buffer, self.addr, 0x0E)
+        self.magx = ((buffer[1]*(2**8))+ buffer[0])/16
+        self.magy = ((buffer[3]*(2**8))+ buffer[2])/16
+        return self.magx, self.magy
