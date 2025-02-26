@@ -1,50 +1,54 @@
 from pyb import Pin, ADC, UART
-from time import sleep
+from time import sleep, sleep_us
 
 def main():
     "Blutooth Enable"
     BT_ser = UART(3, 115200)
     pyb.repl_uart(BT_ser)
     # For getting calibration values and making sure the code works as planned
-    sensor = LineSensor(Pin.cpu.C2,Pin.cpu.A0,Pin.cpu.A1,Pin.cpu.A4,Pin.cpu.B0,
-                        Pin.cpu.C1,Pin.cpu.C0,Pin.cpu.C3)
+    
     leftEnable = Pin(Pin.cpu.A7, mode = Pin.OUT_PP, value = 0)
     leftEnable.low()
     rightEnable = Pin(Pin.cpu.C6, mode = Pin.OUT_PP, value = 0)
     rightEnable.low()
+    num = int(input("how many ticks"))
+    sensor = LineSensor(Pin.cpu.C2,Pin.cpu.A0,Pin.cpu.A1,Pin.cpu.A4,Pin.cpu.B0,
+                        Pin.cpu.C1,Pin.cpu.C0,Pin.cpu.C3,num)
     white, black = sensor.calibrate()
-    
+
     print(f"white calibration list: {white}\nblack calibration list: {black}")
 
-
-    input("are you over the line?")
+    input("are you ready to test?")
     try:
         while True:
-            print(sensor.read())
+            print(sensor.readAll())
             sleep(1)
     except KeyboardInterrupt:
-        print(sensor.read())
+        print(sensor.readAll())
     
 class LineSensor:
     '''A line sensor interface encapsulated in a Python class. Works with
     line sensors on the Romi. For a 7 sensor ANALOG array.'''
 
-    def __init__(self,CTRL,pin1,pin3,pin5,pin7,pin9,pin11,pin13):
+    def __init__(self,CTRL,pin1,pin3,pin5,pin7,pin9,pin11,pin13,num):
         '''Initializes a new LineSensor object.'''
         self.CTRL = Pin(CTRL, mode = Pin.OUT_PP, value = 1)
-        # Create a list of all pins to iterate through.
-        '''self.pins = [Pin(pin1, mode = Pin.ANALOG, value = 0),
-                     Pin(pin3, mode = Pin.ANALOG, value = 0),
-                     Pin(pin5, mode = Pin.ANALOG, value = 0),
-                     Pin(pin7, mode = Pin.ANALOG, value = 0),
-                     Pin(pin9, mode = Pin.ANALOG, value = 0),
-                     Pin(pin11, mode = Pin.ANALOG, value = 0),
-                     Pin(pin13, mode = Pin.ANALOG, value = 0),]'''
-        self.whiteValue = [0 for n in range(7)]
-        self.blackValue = [0 for n in range(7)]
-        self.ADCs = [ADC(pin1),ADC(pin3),ADC(pin5),ADC(pin7),ADC(pin9),ADC(pin11),ADC(pin13)]
-        #self.ADCs = [ADC(self.pins[0]),ADC(self.pins[1]),ADC(self.pins[2]),ADC(self.pins[3]),ADC(self.pins[4]),
-                    #ADC(self.pins[5]),ADC(self.pins[6])]
+        self.CTRL.high()
+        # Predetermined white and black ADC values. These get reset if
+        # calibration is called.
+        self.whiteValue = [217, 205, 205, 205, 202, 197, 204]
+        self.blackValue = [673, 420, 825, 1085, 1239, 1145, 1778]
+        # Create a list of all pins as ADC objects to iterate through.
+        self.ADCs = [ADC(pin1),ADC(pin3),ADC(pin5),ADC(pin7),ADC(pin9),
+                     ADC(pin11),ADC(pin13)]
+
+        # Dimming sensors
+        if num != 0:
+            for i in range(num):
+                sleep_us(1)
+                self.CTRL.low()
+                sleep_us(1)
+                self.CTRL.high()
 
     def calibrate(self):
         '''Gets calibration lists for the line sensor'''
@@ -85,8 +89,14 @@ class LineSensor:
             self.centroid = sum(numerator)/sum(normValues)
         except:
             self.centroid = 0
-
         return self.centroid
+
+    def readAll(self):
+        '''Debugging function to read outputs from all sensors'''
+        self.readings = [0 for n in range(7)]
+        for n in range (7):
+            self.readings = self.ADCs[n].read()
+        return self.readings
 
 if __name__ == "__main__":
     main()
