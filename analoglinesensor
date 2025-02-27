@@ -36,7 +36,7 @@ class LineSensor:
     def __init__(self,CTRL,pin1,pin3,pin5,pin7,pin9,pin11,pin13,num):
         '''Initializes a new LineSensor object.'''
         self.CTRL = Pin(CTRL, mode = Pin.OUT_PP, value = 0)
-        sleep(1)
+        sleep_us(150) # Resets the LED signal strength
         self.CTRL.high()
         # Predetermined white and black ADC values. These get reset if
         # calibration is called.
