@@ -21,7 +21,10 @@ def main():
     input("are you ready to test?")
     try:
         while True:
-            print(sensor.readAll())
+            n = sensor.readAll()
+            c = sensor.read()
+            print(f"all readings: {n}")
+            print(f"centroid: {c}")
             sleep(1)
     except KeyboardInterrupt:
         print(sensor.readAll())
@@ -32,12 +35,13 @@ class LineSensor:
 
     def __init__(self,CTRL,pin1,pin3,pin5,pin7,pin9,pin11,pin13,num):
         '''Initializes a new LineSensor object.'''
-        self.CTRL = Pin(CTRL, mode = Pin.OUT_PP, value = 1)
+        self.CTRL = Pin(CTRL, mode = Pin.OUT_PP, value = 0)
+        sleep(1)
         self.CTRL.high()
         # Predetermined white and black ADC values. These get reset if
         # calibration is called.
-        self.whiteValue = [217, 205, 205, 205, 202, 197, 204]
-        self.blackValue = [673, 420, 825, 1085, 1239, 1145, 1778]
+        self.whiteValue = [249, 231, 229, 232, 229, 222, 237]
+        self.blackValue = [2479, 2030, 2036, 1898, 1919, 1503, 2108]
         # Create a list of all pins as ADC objects to iterate through.
         self.ADCs = [ADC(pin1),ADC(pin3),ADC(pin5),ADC(pin7),ADC(pin9),
                      ADC(pin11),ADC(pin13)]
@@ -82,7 +86,6 @@ class LineSensor:
 
         numerator = [0 for n in range(7)]
         for i in range(7):
-            print(i-3)
             numerator[i] = normValues[i]*(i-3)
         
         try:
@@ -95,7 +98,7 @@ class LineSensor:
         '''Debugging function to read outputs from all sensors'''
         self.readings = [0 for n in range(7)]
         for n in range (7):
-            self.readings = self.ADCs[n].read()
+            self.readings[n] = self.ADCs[n].read()
         return self.readings
 
 if __name__ == "__main__":
