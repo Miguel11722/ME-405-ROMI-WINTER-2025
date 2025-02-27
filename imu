@@ -16,7 +16,8 @@ class IMU:
         denoting the desired operating mode. The mode must be set to CONFIG
         before being able to be set to any other operation mode.'''
         modeDict = {"IMU":0b1000,"COMPASS":0b1001,"M4G":0b1010,
-                    "NDOF_FMC_OFF":0b1011,"NDOF":0b1100,"CONFIG":0b0000}
+                    "NDOF_FMC_OFF":0b1011,"NDOF":0b1100,"CONFIG":0b0000,
+                    "ACC_ONLY": 0b0001}
         OPR_MODE = 0x3D
         self.I2C.mem_write(modeDict[mode],self.addr,OPR_MODE)
         return
@@ -57,17 +58,17 @@ class IMU:
         in radians.'''
         buffer = bytearray(6)
         self.I2C.mem_read(buffer, self.addr, 0x1A)
-        self.head   = ((buffer[1]*(2**8))+ buffer[0])/900
-        self.roll   = ((buffer[3]*(2**8))+ buffer[2])/900
-        self.pitch  = ((buffer[5]*(2**8))+ buffer[4])/900
-        return self.head, self.roll, self.pitch
+        head    = ((buffer[1]*(2**8))+ buffer[0])/900 # heading (z axis)
+        pitch   = ((buffer[3]*(2**8))+ buffer[2])/900 # pitch   (y axis)
+        roll    = ((buffer[5]*(2**8))+ buffer[4])/900 # roll    (x axis)
+        return head, pitch, roll
 
     def heading(self):
-        '''Gets just the heading (yaw) Euler angle in radians.'''
+        '''Gets just the heading (yaw) Euler angle in   radians.'''
         buffer = bytearray(2)
-        self.I2C.mem_read(buffer, self.addr, 0x1E)
-        self.head  = ((buffer[1]*(2**8))+ buffer[0])/900
-        return self.head
+        self.I2C.mem_read(buffer, self.addr, 0x1A)
+        head  = ((buffer[1]*(2**8))+ buffer[0])/900
+        return head
 
     def quaternion(self):
         '''Returns the quaternion of orientation. Unitless.'''
@@ -81,26 +82,32 @@ class IMU:
         return self.w, self.x, self.y, self.z
     
     def fullAngular(self):
-        # DOUBLE CHECK THAT THESE AREN'T REMAPPED LIKE EULER ANGLES WERE!!!!
         '''Returns x, y, and z angular velocities in rad/s'''
         buffer = bytearray(6)
         self.I2C.mem_read(buffer, self.addr, 0x14)
-        self.pitchRate  = ((buffer[1]*(2**8))+ buffer[0])
-        self.rollRate   = ((buffer[3]*(2**8))+ buffer[2])
-        self.yawRate    = ((buffer[5]*(2**8))+ buffer[4])
-        return self.pitchRate, self.rollRate, self.yawRate        
+        rollRate  = ((buffer[1]*(2**8))+ buffer[0]) # roll (x axis)
+        # Below deals with overflow/bit extension- easier to read/understand
+        if rollRate > 32767:
+            rollRate -= 65536
+        pitchRate   = ((buffer[3]*(2**8))+ buffer[2]) # pitch (y axis)
+        if pitchRate > 32767:
+            pitchRate -= 65536
+        headRate    = ((buffer[5]*(2**8))+ buffer[4]) # heading (z axis)
+        if headRate > 32767:
+            headRate -= 65536
+        return pitchRate, rollRate, headRate        
 
     def headRate(self):
         '''Returns the heading rate of the IMU in rad/s'''
         buffer = bytearray(2)
         self.I2C.mem_read(buffer, self.addr, 0x18)
-        self.headingRate  = ((buffer[1]*(2**8))+ buffer[0])
-        return self.headingRate
+        headingRate  = ((buffer[1]*(2**8))+ buffer[0])
+        return headingRate
     
     def findNorth(self):
         '''Returns the x and y components of the magnetic field in microTesla'''
         buffer = bytearray(4)
         self.I2C.mem_read(buffer, self.addr, 0x0E)
-        self.magx = ((buffer[1]*(2**8))+ buffer[0])/16
-        self.magy = ((buffer[3]*(2**8))+ buffer[2])/16
-        return self.magx, self.magy
+        magx = ((buffer[1]*(2**8))+ buffer[0])/16
+        magy = ((buffer[3]*(2**8))+ buffer[2])/16
+        return magx, magy
