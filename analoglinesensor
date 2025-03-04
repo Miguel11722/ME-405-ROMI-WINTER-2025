@@ -2,57 +2,38 @@ from pyb import Pin, ADC, UART
 from time import sleep, sleep_us
 
 def main():
-    "Blutooth Enable"
-    BT_ser = UART(3, 115200)
-    pyb.repl_uart(BT_ser)
-    # For getting calibration values and making sure the code works as planned
-    
-    leftEnable = Pin(Pin.cpu.A7, mode = Pin.OUT_PP, value = 0)
-    leftEnable.low()
-    rightEnable = Pin(Pin.cpu.C6, mode = Pin.OUT_PP, value = 0)
-    rightEnable.low()
-    num = int(input("how many ticks"))
     sensor = LineSensor(Pin.cpu.C2,Pin.cpu.A0,Pin.cpu.A1,Pin.cpu.A4,Pin.cpu.B0,
-                        Pin.cpu.C1,Pin.cpu.C0,Pin.cpu.C3,num)
-    white, black = sensor.calibrate()
-
-    print(f"white calibration list: {white}\nblack calibration list: {black}")
-
+                        Pin.cpu.C1,Pin.cpu.C0,Pin.cpu.C3)
     input("are you ready to test?")
     try:
         while True:
-            n = sensor.readAll()
-            c = sensor.read()
+            n = sensor.read()
+            c = sensor.get_centroid()
             print(f"all readings: {n}")
             print(f"centroid: {c}")
             sleep(1)
     except KeyboardInterrupt:
-        print(sensor.readAll())
+        print(sensor.read())
     
 class LineSensor:
     '''A line sensor interface encapsulated in a Python class. Works with
     line sensors on the Romi. For a 7 sensor ANALOG array.'''
 
-    def __init__(self,CTRL,pin1,pin3,pin5,pin7,pin9,pin11,pin13,num):
+    def __init__(self,CTRL,pin1,pin3,pin5,pin7,pin9,pin11,pin13):
         '''Initializes a new LineSensor object.'''
         self.CTRL = Pin(CTRL, mode = Pin.OUT_PP, value = 0)
         sleep_us(150) # Resets the LED signal strength
         self.CTRL.high()
         # Predetermined white and black ADC values. These get reset if
-        # calibration is called.
+        # calibration is called. The values for black are based on experimental
+        # readings over the line used on the track, and exaggerate the black
+        # readings.
         self.whiteValue = [249, 231, 229, 232, 229, 222, 237]
-        self.blackValue = [2479, 2030, 2036, 1898, 1919, 1503, 2108]
+        self.blackValue = [300 for n in range(7)]
         # Create a list of all pins as ADC objects to iterate through.
         self.ADCs = [ADC(pin1),ADC(pin3),ADC(pin5),ADC(pin7),ADC(pin9),
                      ADC(pin11),ADC(pin13)]
-
-        # Dimming sensors
-        if num != 0:
-            for i in range(num):
-                sleep_us(1)
-                self.CTRL.low()
-                sleep_us(1)
-                self.CTRL.high()
+        # dimming sensors
 
     def calibrate(self):
         '''Gets calibration lists for the line sensor'''
@@ -67,8 +48,15 @@ class LineSensor:
             self.blackValue[n] = self.ADCs[n].read()
 
         return self.whiteValue, self.blackValue
-
+    
     def read(self):
+        '''Reads the line sensor and stores values in a list'''
+        self.readings = [0 for n in range(7)]
+        for n in range (7):
+            self.readings[n] = self.ADCs[n].read()
+        return self.readings
+
+    def get_centroid(self):
         '''Reads the line sensor array and returns the centroid of the line
         sensor as a value away from 0, where 0 is the middle of the sensor
         (sensor 7 for our sensor array).'''
@@ -77,7 +65,7 @@ class LineSensor:
 
         for n in range(7):
             normValues[n] = \
-                        (self.ADCs[n].read()-self.whiteValue[n])/\
+                        (self.readings[n]-self.whiteValue[n])/\
                         (self.blackValue[n]-self.whiteValue[n])
             if normValues[n]>1:
                 normValues[n] = 1
@@ -94,12 +82,38 @@ class LineSensor:
             self.centroid = 0
         return self.centroid
 
-    def readAll(self):
-        '''Debugging function to read outputs from all sensors'''
-        self.readings = [0 for n in range(7)]
-        for n in range (7):
-            self.readings[n] = self.ADCs[n].read()
-        return self.readings
+    def lineType(self):
+        '''Returns the type of line the sensor is currently reading. Could be
+        a line, a fork, all white, or all black.
+        1 - All White
+        2 - All Black
+        3 - Fork
+        4 - Normal Line'''
+        
+        lineType = 4
+
+        normList = [0 for n in range(7)]
+        for i in range(7):
+            if self.readings[i] >= 300:
+                normList[i] = 1
+            else:
+                normList[i] = 0
+
+        if sum(normList) == 0:
+            lineType = 1
+        elif sum(normList) >= 5:
+            lineType = 2
+        else:
+            idx1 = normList.index(1)
+            if idx1 < 6 and sum(normList) != 1:
+                try:
+                    idx2 = normList.index(1,idx1)
+                    if idx2-idx1 != 1:
+                        lineType = 3
+                except ValueError:
+                    lineType = 4
+
+        return lineType
 
 if __name__ == "__main__":
     main()
