@@ -14,24 +14,28 @@ def main():
     centroid = task_share.Share('f', thread_protect=False, name="Centroid")
     heading = task_share.Share('f', thread_protect=False, name="heading")
     lineType = task_share.Share('b', thread_protect=False, name="line type")
+    bumped = task_share.Share('b', thread_protect=False, name="bumped")
 
     # Initialize tasks
     task1 = cotask.Task(rightMotor, name="Right Motor", priority=3,
                         period=50,profile=True, trace=False, 
-                        shares=(centroid, lineType, heading))
+                        shares=(centroid, lineType, heading, bumped))
     task2 = cotask.Task(leftMotor, name="Left Motor", priority=2,
                         period=50,profile=True, trace=False, 
-                        shares=(centroid, lineType, heading))
+                        shares=(centroid, lineType, heading, bumped))
     task3 = cotask.Task(lineSensor, name="Line Sensor", priority=1,
                         period=100,profile=True, trace=False, 
                         shares=(centroid, lineType))
     task4 = cotask.Task(IMU, name = "IMU", priority = 1, period = 100, 
                         profile = True, trace = False, shares = (heading))
+    task5 = cotask.Task(BumpSensor, name = "IMU", priority = 1, period = 100, 
+                        profile = True, trace = False, shares = (bumped))
 
     # Add tasks to task list
     cotask.task_list.append(task1)
     cotask.task_list.append(task2)
     cotask.task_list.append(task3)
+    cotask.task_list.append(task4)
 
     # Run the memory garbage collector to ensure memory is as defragmented as
     # possible before the real-time scheduler is started
@@ -49,7 +53,7 @@ def main():
     print('')
 
 def leftMotor(shares):
-    cent, lineType, head = shares
+    cent, lineType, head, bumped = shares
     leftState = 0
     while True:
         # State 0: Initialization
@@ -98,7 +102,7 @@ def leftMotor(shares):
             yield 
                 
 def rightMotor(shares):
-    cent, lineType, head = shares
+    cent, lineType, head, bumped = shares
     rightState = 0
     while True:
         # State 0: Initialization
@@ -186,6 +190,18 @@ def IMU(shares):
             head.put(bno.heading())
             yield
             
+def BumpSensor(shares):
+    bumped = shares
+    bumpState = 0
+    # State 0: Initialization
+    while True:
+        if bumpState == 0:
+            # INITIALIZE BUMP SENSORS
+            pass
+        # State 1: Looking for a bump
+        elif bumpState == 1:
+            # IMPLEMENT IF BUMP IS FOUND
+            pass
 
 # PID CONTROLLER AND RELATED
 def pid_controller(setpoint, pv, kp, ki, kd, previous_error, integral, dt):
