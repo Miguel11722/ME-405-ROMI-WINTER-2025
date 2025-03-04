@@ -1,0 +1,200 @@
+import gc
+import pyb
+from pyb import Pin, Timer, I2C
+import cotask
+import task_share
+import motor
+import encoder
+import BNO055
+from pyb import UART
+import analoglinesensor
+
+def main():
+    # Initialize shares. No specific naming convention (yet)
+    centroid = task_share.Share('f', thread_protect=False, name="Centroid")
+    heading = task_share.Share('f', thread_protect=False, name="heading")
+    lineType = task_share.Share('b', thread_protect=False, name="line type")
+
+    # Initialize tasks
+    task1 = cotask.Task(rightMotor, name="Right Motor", priority=3,
+                        period=50,profile=True, trace=False, 
+                        shares=(centroid, lineType, heading))
+    task2 = cotask.Task(leftMotor, name="Left Motor", priority=2,
+                        period=50,profile=True, trace=False, 
+                        shares=(centroid, lineType, heading))
+    task3 = cotask.Task(lineSensor, name="Line Sensor", priority=1,
+                        period=100,profile=True, trace=False, 
+                        shares=(centroid, lineType))
+    task4 = cotask.Task(IMU, name = "IMU", priority = 1, period = 100, 
+                        profile = True, trace = False, shares = (heading))
+
+    # Add tasks to task list
+    cotask.task_list.append(task1)
+    cotask.task_list.append(task2)
+    cotask.task_list.append(task3)
+
+    # Run the memory garbage collector to ensure memory is as defragmented as
+    # possible before the real-time scheduler is started
+    gc.collect()
+
+    # Run the scheduler with the chosen scheduling algorithm. Quit if ^C pressed
+    while True:
+        try:
+            cotask.task_list.pri_sched()
+        except KeyboardInterrupt:
+            break
+    print('\n' + str (cotask.task_list))
+    print(task_share.show_all())
+    print(task1.get_trace())
+    print('')
+
+def leftMotor(shares):
+    cent, lineType, head = shares
+    leftState = 0
+    while True:
+        # State 0: Initialization
+        if leftState == 0:
+          # Motor Pin Setup
+            LeftEffort = Pin(Pin.cpu.A9, mode = Pin.OUT_PP)
+            LeftEffort.low()
+            
+            # PWM Setup
+            LeftPWM = 10 # PWM, %
+            tim1 = Timer(1, freq = 1000)
+            LeftSpeed = tim1.channel(2, pin=LeftEffort, mode=Timer.PWM,
+                                pulse_width_percent=LeftPWM)
+            LeftMotor = motor.Motor(LeftSpeed,Pin.cpu.A6,Pin.cpu.A7)
+            LeftEncoder = encoder.Encoder(8,Pin.cpu.C7,Pin.cpu.C6)
+            LeftMotor.disable()
+            LeftEncoder.zero()
+            LeftMotor.enable()
+
+            leftState = 1
+            yield
+
+        # State 1: PID control
+        elif leftState ==1:
+            setpoint = 0
+            pv = cent.get()  # Initial process variable
+            kp = 2  # Proportional gain
+            ki = 0.1  # Integral gain
+            kd = 0.05 # Derivative gain
+            previous_error = 0
+            integral = 0
+            dt = 0.1  # Time step
+            
+            control, error, integral = pid_controller(setpoint, pv, kp, ki, kd,
+                                                previous_error, integral, dt)
+            # Update process variable based on control output (simplified)
+            pv += control * dt  
+            previous_error = error
+            
+            if pv < 0 :
+                LeftPWM = 10
+                LeftMotor.set_effort(LeftPWM)
+            elif pv > 0:
+                LeftPWM = 22
+                LeftMotor.set_effort(LeftPWM)
+            yield 
+                
+def rightMotor(shares):
+    cent, lineType, head = shares
+    rightState = 0
+    while True:
+        # State 0: Initialization
+        if rightState == 0:
+            # Motor Pin Setup
+            RightEffort = Pin(Pin.cpu.A8, mode = Pin.OUT_PP)
+            RightEffort.low()
+
+            # PWM Setup
+            RightPWM = 10 # PWM, %
+            tim1 = Timer(1, freq = 1000)
+            RightSpeed =  tim1.channel(1, pin=RightEffort, mode=Timer.PWM,
+                                pulse_width_percent=RightPWM)
+
+            RightMotor = motor.Motor(RightSpeed,Pin.cpu.B3,Pin.cpu.A10)
+            RightEncoder = encoder.Encoder(3,Pin.cpu.B5,Pin.cpu.B4)
+            RightMotor.disable()
+            RightEncoder.zero()
+            RightMotor.enable()
+            rightState = 1
+            yield
+
+        # State 1: PID control
+        elif rightState ==1:
+            setpoint = 0
+            pv = cent.get()  # Initial proscess variable
+            kp = 2 # Proportional gain
+            ki = 0.1  # Integral gain
+            kd = 0.05  # Derivative gain
+            previous_error = 0
+            integral = 0
+            dt = 0.1  # Time step
+            
+            control, error, integral = pid_controller(setpoint, pv, kp, ki, kd,
+                                                previous_error, integral, dt)
+            # Update process variable based on control output (simplified)
+            pv += control * dt  
+            previous_error = error
+            print(pv)
+            if pv < 0:
+                RightPWM = 22
+                RightMotor.set_effort(RightPWM)
+            elif pv > 0:
+                RightPWM = 10
+                RightMotor.set_effort(RightPWM)
+            yield    
+
+def lineSensor(shares):
+    cent,lineType = shares
+    lineState = 0
+    
+    while True:
+        # State 0: Initialization
+        if lineState == 0:
+            sensor = analoglinesensor.LineSensor(Pin.cpu.C2,Pin.cpu.A0,
+                                            Pin.cpu.A1,Pin.cpu.A4,Pin.cpu.B0,
+                                            Pin.cpu.C1,Pin.cpu.C0,Pin.cpu.C3)
+            lineState = 1
+            yield
+        # State 1: Getting centroid and line type. Line type is a normal line
+        # by default.
+        elif lineState == 1:
+            sensor.update()
+            cent.put(sensor.get_centroid())
+            lineType.put(sensor.get_lineType())
+            yield
+            
+def IMU(shares):
+    head = shares
+    BNOstate = 0
+
+    while True:
+        # State 0: Initialization
+        if BNOstate == 0:
+            i2c=I2C(1,I2C.CONTROLLER,baudrate = 400000)
+            i2c.init(I2C.CONTROLLER)
+            bno = BNO055(i2c)
+            bno.mode("CONFIG")
+            # bno.write_coef()
+            bno.mode("NDOF")
+            BNOstate = 1
+            yield
+        # State 1: Grabbing heading
+        elif BNOstate == 1:
+            head.put(bno.heading())
+            yield
+            
+
+# PID CONTROLLER AND RELATED
+def pid_controller(setpoint, pv, kp, ki, kd, previous_error, integral, dt):
+    error = setpoint - pv
+    integral += error * dt
+    derivative = (error - previous_error) / dt
+    control = kp * error + ki * integral + kd * derivative
+    return control, error, integral
+
+
+if __name__ == "__main__":
+    main()
