@@ -1,0 +1,62 @@
+from time import ticks_us, ticks_diff # Use to get dt value in update()
+from pyb import Timer, Pin
+
+class Encoder:
+    '''A quadrature encoder decoding interface encapsulated in a python class'''
+
+    def __init__ (self, tim, chA_pin, chB_pin):
+        '''Initializes an Encoder object'''
+        self.tim = Timer(tim, period = 0xFFFF, prescaler = 0) #right encoder
+        self.tim.channel(1, pin=chA_pin, mode=Timer.ENC_AB)
+        self.tim.channel(2, pin=chB_pin, mode=Timer.ENC_AB)
+        self.position   = 0      # Total accumulated position of the encoder
+        self.avgCount   = 7      # number of averaged data points for velocity
+        self.posList    = [0 for n in range(self.avgCount)] # Previous positions 
+        self.timeList   = [0 for n in range(self.avgCount)] # Previous times
+        self.prev_count = 0      # Counter value from the most recent update
+        self.prev_time  = 0      # Time value from the most recent update
+        self.delta      = 0      # Change in count between the last two updates
+        self.dt         = 0      # Amount of time between the last two updates
+
+    def update(self): 
+        '''Runs one update step on the encoder's timer counter to keep 
+        track of the change in count and check for counter reload'''
+        # Create temp variables
+        self.time = ticks_us()
+        self.count = self.tim.counter()
+        # Update dt
+        self.dt = ticks_diff(self.time,self.prev_time)
+        self.delta = self.count - self.prev_count 
+        self.prev_count = self.count # update previous count
+        self.prev_time = self.time   # update previous time
+        if self.delta >= (65535+1)/2:
+            self.delta -= (65535+1)
+        elif self.delta <= -(65535+1)/2:
+            self.delta += (65535+1)
+        self.position += self.delta
+        self.posList.pop() # Remove final data point
+        self.posList.insert(0,self.position) # Put in newest position at front
+        self.timeList.pop() # Remove final data point
+        self.timeList.insert(0,self.time) # Put in newest time at front
+
+    def get_position(self):
+        '''Returns the most recently updated value of position as determined 
+        within the update() method'''
+        return self.position
+
+    def get_velocity(self):
+        '''Returns an average measure of velocity using the 5 previous values of
+        delta and dt  as determined within the update() method'''
+        # encoder ticks/program ticks (us)
+        return (self.posList[0]-self.posList[self.avgCount-1])/\
+            (self.timeList[0]-self.timeList[self.avgCount-1])
+
+    def get_time(self):
+        '''Returns the most recently updated value of time as determined 
+        within the update() method'''
+        return(self.prev_time)
+
+    def zero(self):
+        '''Sets the present encoder position to zero and causes future updates
+        to measure with respect to the new zero position'''
+        self.position = 0
