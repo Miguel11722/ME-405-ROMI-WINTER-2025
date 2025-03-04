@@ -7,10 +7,13 @@ def main():
     input("are you ready to test?")
     try:
         while True:
-            n = sensor.read()
+            sensor.update()
+            n = sensor.get_sensors()
             c = sensor.get_centroid()
+            t = sensor.get_lineType()
             print(f"all readings: {n}")
             print(f"centroid: {c}")
+            print(f"line type: {t}") 
             sleep(1)
     except KeyboardInterrupt:
         print(sensor.read())
@@ -49,14 +52,32 @@ class LineSensor:
 
         return self.whiteValue, self.blackValue
     
-    def read(self):
-        '''Reads the line sensor and stores values in a list'''
+    def update(self):
+        '''Updates the line sensor'''
         self.readings = [0 for n in range(7)]
         for n in range (7):
             self.readings[n] = self.ADCs[n].read()
-        return self.readings
+        self.solve_centroid()
+        self.solve_lineType()
+        
 
+    def get_sensors(self):
+        '''Returns a list of the previously updated sensor values'''
+        return self.readings
+    
     def get_centroid(self):
+        '''Returns the centroid value'''
+        return self.centroid
+
+    def get_lineType(self):
+        '''Returns the current line type.
+
+        1 - Normal line
+        2 - All white
+        3 - All black or fork'''
+        return self.lineType
+
+    def solve_centroid(self):
         '''Reads the line sensor array and returns the centroid of the line
         sensor as a value away from 0, where 0 is the middle of the sensor
         (sensor 7 for our sensor array).'''
@@ -82,15 +103,18 @@ class LineSensor:
             self.centroid = 0
         return self.centroid
 
-    def lineType(self):
+    def solve_lineType(self):
         '''Returns the type of line the sensor is currently reading. Could be
-        a line, a fork, all white, or all black.
-        1 - All White
-        2 - All Black
-        3 - Fork
-        4 - Normal Line'''
+        a line, a fork, all white, or all black. 
+        Note: This is not perfect, and any all white outputs should be checked
+        against the centroid. If the centroid is nonzero, Romi is still over a
+        line.
+
+        1 - Normal line
+        2 - All white
+        3 - All black or fork'''
         
-        lineType = 4
+        self.lineType = 1
 
         normList = [0 for n in range(7)]
         for i in range(7):
@@ -99,21 +123,21 @@ class LineSensor:
             else:
                 normList[i] = 0
 
-        if sum(normList) == 0:
-            lineType = 1
+        if sum(normList) == 0 and self.centroid == 0:
+            self.lineType = 2
         elif sum(normList) >= 5:
-            lineType = 2
+            self.lineType = 3
         else:
-            idx1 = normList.index(1)
-            if idx1 < 6 and sum(normList) != 1:
-                try:
+            try:
+                idx1 = normList.index(1)
+                if idx1 < 6 and sum(normList) != 1:
                     idx2 = normList.index(1,idx1)
                     if idx2-idx1 != 1:
-                        lineType = 3
-                except ValueError:
-                    lineType = 4
+                        self.lineType = 3
+            except ValueError:
+                self.lineType = 1
 
-        return lineType
+        return self.lineType
 
 if __name__ == "__main__":
     main()
