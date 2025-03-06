@@ -1,0 +1,20 @@
+import pyb
+from pyb import Pin
+
+def test_pin(pin):
+    # wait for pin to change value
+    # it needs to be stable for a continuous 50ms
+    cur_value = pin.value()
+    active = 0
+    while active < 50:
+        if pin.value() != cur_value:
+            active += 1
+        else:
+            active = 0
+        pyb.delay(1)
+
+pin_1 = Pin(Pin.cpu.H0, mode = Pin.IN)  
+print(pin_1.value())
+while True:
+    test_pin(pin_1)
+    print("Signal Debounced")
