@@ -1,0 +1,23 @@
+#The following code creates a class for the bumper sensors to use
+from pyb import Pin, Timer, ExtInt
+from time import sleep_ms
+
+
+def main():
+    rbump_0 = Pin(Pin.cpu.H0, mode = Pin.IN)
+    rbump_1 = Pin(Pin.cpu.H1, mode = Pin.IN)
+    rbump_2 = Pin(Pin.cpu.D2, mode = Pin.IN)
+    
+    lbump_3 = Pin(Pin.cpu.A15, mode = Pin.IN)
+    lbump_4 = Pin(Pin.cpu.C12, mode = Pin.IN)
+    lbump_5 = Pin(Pin.cpu.C10, mode = Pin.IN)
+    
+
+class bumpsensor:
+    '''A bump sensor class that tests if any of the bump sensors havew been'''
+    '''triggered'''
+    def __init__(self):
+        self.bumped
+        
+if __name__ == "__main__":
+    main()
