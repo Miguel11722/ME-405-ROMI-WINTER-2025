@@ -15,8 +15,7 @@ class bumpsensor:
         self.pins = [Pin(bump0,mode=Pin.IN),Pin(bump1,mode=Pin.IN),
                      Pin(bump2,mode=Pin.IN),Pin(bump3,mode=Pin.IN),
                      Pin(bump4,mode=Pin.IN),Pin(bump5,mode=Pin.IN)]
-        self.pinsHigh = [0 for n in range(6)]
-        self.prevHigh = [0 for n in range(6)]
+        self.highList = [0 for n in range(6)]
         self.highPin = -1   # high pin index. -1 indicates no pins high.
         self.t1 = 0
         self.t2 = pyb.millis()
@@ -27,17 +26,16 @@ class bumpsensor:
         checking by the bump sensor task in main.'''
         bumped = 0
         for i in range(6):
-            self.prevHigh[i] = self.pinsHigh[i]
-            self.pinsHigh[i] = self.pins[i].value()
+            self.highList[i] = self.pins[i].value()
         
         if self.t2-self.t1 >= 50: # Been 50 ms and pin still high
             bumped = 1
         else: # See if any pins are high
             try:
                 if self.highPin == -1:
-                    self.highPin = self.pinsHigh.index(1) # earliest high pin
+                    self.highPin = self.highList.index(1) # earliest high pin
                 # If the pin is still high, increase the time count
-                if self.pinsHigh(self.highPin) == 1:
+                if self.highList(self.highPin) == 1:
                     self.t2 = pyb.millis()
                 # If the pin has gone low too soon, reset timer
                 else:
