@@ -4,20 +4,54 @@ from time import sleep_ms
 
 
 def main():
-    rbump_0 = Pin(Pin.cpu.H0, mode = Pin.IN)
-    rbump_1 = Pin(Pin.cpu.H1, mode = Pin.IN)
-    rbump_2 = Pin(Pin.cpu.D2, mode = Pin.IN)
-    
-    lbump_3 = Pin(Pin.cpu.A15, mode = Pin.IN)
-    lbump_4 = Pin(Pin.cpu.C12, mode = Pin.IN)
-    lbump_5 = Pin(Pin.cpu.C10, mode = Pin.IN)
+    bump = bumpsensor(Pin.cpu.H0,Pin.cpu.H1,Pin.cpu.D2,Pin.cpu.A15,Pin.cpu.C12,
+                      Pin.cpu.C10)
     
 
 class bumpsensor:
     '''A bump sensor class that tests if any of the bump sensors havew been'''
-    '''triggered'''
-    def __init__(self):
-        self.bumped
+    '''triggered.'''
+    def __init__(self,bump0,bump1,bump2,bump3,bump4,bump5):
+        self.pins = [Pin(bump0,mode=Pin.IN),Pin(bump1,mode=Pin.IN),
+                     Pin(bump2,mode=Pin.IN),Pin(bump3,mode=Pin.IN),
+                     Pin(bump4,mode=Pin.IN),Pin(bump5,mode=Pin.IN)]
+        self.pinsHigh = [0 for n in range(6)]
+        self.prevHigh = [0 for n in range(6)]
+        self.highPin = -1   # high pin index. -1 indicates no pins high.
+        self.t1 = 0
+        self.t2 = pyb.millis()
+
+    def checkBumped(self):
+        '''Returns a 1 if any pins have been bumped, or 0 if it hasn't been
+        bumped or is still checking the debouncing. This is reliant on continual
+        checking by the bump sensor task in main.'''
+        bumped = 0
+        for i in range(6):
+            self.prevHigh[i] = self.pinsHigh[i]
+            self.pinsHigh[i] = self.pins[i].value()
         
+        if self.t2-self.t1 >= 50: # Been 50 ms and pin still high
+            bumped = 1
+        else: # See if any pins are high
+            try:
+                if self.highPin == -1:
+                    self.highPin = self.pinsHigh.index(1) # earliest high pin
+                # If the pin is still high, increase the time count
+                if self.pinsHigh(self.highPin) == 1:
+                    self.t2 = pyb.millis()
+                # If the pin has gone low too soon, reset timer
+                else:
+                    self.highPin = -1
+                    self.t1 = self.t2
+                    self.t2 = pyb.millis()
+
+            except: # no pins high, reset
+                self.highPin = -1
+                self.t1 = self.t2
+                self.t2 = pyb.millis()
+
+        return bumped
+               
 if __name__ == "__main__":
     main()
+
