@@ -1,0 +1,42 @@
+# Motor Set Up
+# Motor Pin Setup
+
+# PWM Setup
+RightPWM = 0 # PWM, %
+tim1 = Timer(1, freq = 1000)
+RightSpeed =  tim1.channel(1, pin=RightEffort, mode=Timer.PWM,
+                           pulse_width_percent=RightPWM)
+
+RightMotor = motor.Motor(RightSpeed,Pin.cpu.B3,Pin.cpu.A10)
+RightEncoder = encoder.Encoder(3,Pin.cpu.B5,Pin.cpu.B4)
+RightMotor.disable()
+RightEncoder.zero()
+
+# PWM Setup
+LeftPWM = 0 # PWM, %
+LeftSpeed = tim1.channel(2, pin=LeftEffort, mode=Timer.PWM,
+                         pulse_width_percent=LeftPWM)
+LeftMotor = motor.Motor(LeftSpeed,Pin.cpu.A6,Pin.cpu.A7)
+LeftEncoder = encoder.Encoder(8,Pin.cpu.C7,Pin.cpu.C6)
+LeftMotor.disable()
+LeftEncoder.zero()
+
+input("ready?")
+LeftPWM = 10
+RightPWM = 10
+LeftMotor.set_effort(LeftPWM)
+RightMotor.set_effort(RightPWM)
+RightMotor.enable()
+LeftMotor.enable()
+try:
+    while True:
+        LeftEncoder.update()
+        RightEncoder.update()
+        
+except:
+    LeftMotor.disable()
+    RightMotor.disable()
+    LeftEncoder.update()
+    RightEncoder.update()
+    print(f"Final left encoder reading:{LeftEncoder.get_position()}")
+    print(f"Final right encoder reading:{RightEncoder.get_position()}")
