@@ -5,38 +5,42 @@ import cotask
 import task_share
 import motor
 import encoder
-import BNO055
+import imu
 from pyb import UART
 import analoglinesensor
+from bumpsensor import bumpsensor
 
 def main():
-    # Initialize shares. No specific naming convention (yet)
+    # Initialize shares
     centroid = task_share.Share('f', thread_protect=False, name="Centroid")
     heading = task_share.Share('f', thread_protect=False, name="heading")
     lineType = task_share.Share('b', thread_protect=False, name="line type")
     bumped = task_share.Share('b', thread_protect=False, name="bumped")
+    stage = task_share.Share('b', thread_protect=False, name="stage")
 
     # Initialize tasks
-    task1 = cotask.Task(rightMotor, name="Right Motor", priority=3,
-                        period=50,profile=True, trace=False, 
-                        shares=(centroid, lineType, heading, bumped))
-    task2 = cotask.Task(leftMotor, name="Left Motor", priority=2,
-                        period=50,profile=True, trace=False, 
-                        shares=(centroid, lineType, heading, bumped))
-    task3 = cotask.Task(lineSensor, name="Line Sensor", priority=1,
-                        period=100,profile=True, trace=False, 
+    task1 = cotask.Task(rightMotor, name="Right Motor", priority=5,
+                        period=20,profile=True, trace=False, 
+                        shares=(centroid, lineType, heading, bumped, stage))
+    task2 = cotask.Task(leftMotor, name="Left Motor", priority=4,
+                        period=20, profile=True, trace=False, 
+                        shares=(centroid, lineType, heading, bumped, stage))
+    task3 = cotask.Task(lineSensor, name="Line Sensor", priority=3,
+                        period=20,profile=True, trace=False, 
                         shares=(centroid, lineType))
-    task4 = cotask.Task(IMU, name = "IMU", priority = 1, period = 100, 
+    task4 = cotask.Task(IMU, name = "IMU", priority = 1, period = 20, 
                         profile = True, trace = False, shares = (heading))
-    task5 = cotask.Task(BumpSensor, name = "IMU", priority = 1, period = 100, 
-                        profile = True, trace = False, shares = (bumped))
+    task5 = cotask.Task(BumpSensor, name = "Bump Sensor", priority = 2,
+                        period = 15, profile = True, trace = False,
+                        shares = (bumped, stage))
 
     # Add tasks to task list
     cotask.task_list.append(task1)
     cotask.task_list.append(task2)
     cotask.task_list.append(task3)
     cotask.task_list.append(task4)
-
+    cotask.task_list.append(task5)
+    
     # Run the memory garbage collector to ensure memory is as defragmented as
     # possible before the real-time scheduler is started
     gc.collect()
@@ -53,7 +57,17 @@ def main():
     print('')
 
 def leftMotor(shares):
-    cent, lineType, head, bumped = shares
+    cent, lineType, head, bumped, stage = shares
+    northHead = 5   # Heading values for romi relative to board
+    eastHead  = 5
+    southHead = 5
+    westHead  = 5
+    stage1encoder = 100000 # Encoder readings for left wheel for stage 1
+    stage3encoder = 5000 # Encoder readings for left wheel for stage 3
+    stage6encoder = 5000  # Encoder readings for left wheel for stage 6
+    stage8encoder = 5000  # Encoder readings for left wheel for stage 8
+    stage10encoder = 5000  # Encoder readings for left wheel for stage 10
+    stage12encoder = 5000  # Encoder readings for left wheel for stage 12
     leftState = 0
     while True:
         # State 0: Initialization
@@ -74,35 +88,299 @@ def leftMotor(shares):
             LeftMotor.enable()
 
             leftState = 1
+            stage.put(1)
+            pv = 0  # Initial process variable for next state
             yield
-
-        # State 1: PID control
+        
+        # Sort of like an external interrupt for bump sensors
+        if bumped.get() == 1:
+            if stage.get() != 5 and stage.get() != 6:
+                LeftMotor.disable()
+            elif leftState == 5:
+                leftState = 6
+                stage.put(6)
+                LeftMotor.disable()
+                LeftEncoder.zero()
+            yield
+        
+        # State 1: Line following
         elif leftState ==1:
-            setpoint = 0
-            pv = cent.get()  # Initial process variable
+            LeftEncoder.update()
+            setpoint = 0 # Centered centroid
             kp = 2  # Proportional gain
             ki = 0.1  # Integral gain
-            kd = 0.05 # Derivative gain
-            previous_error = 0
             integral = 0
             dt = 0.1  # Time step
             
-            control, error, integral = pid_controller(setpoint, pv, kp, ki, kd,
-                                                previous_error, integral, dt)
+            control, error, integral = pid_controller(setpoint, pv, kp, ki, 
+                                                      integral, dt)
             # Update process variable based on control output (simplified)
             pv += control * dt  
-            previous_error = error
-            
+
             if pv < 0 :
-                LeftPWM = 10
+                LeftPWM = 15
                 LeftMotor.set_effort(LeftPWM)
             elif pv > 0:
                 LeftPWM = 22
                 LeftMotor.set_effort(LeftPWM)
+            # Checking that we've gone far enough and that the line sensor is
+            # reading all white
+            if ((LeftEncoder.get_position() >= stage1encoder) and \
+                (lineType.get() == 2)) or stage.get() == 2:
+                leftState = 2
+                stage.put(2)
+            yield
+
+        # State 2: Start of grid, checking heading. Want to face local west
+        elif leftState == 2:     
+            if head.get() > 6.2 or head.get() < 0.02:
+                LeftPWM = 0
+                LeftMotor.set_effort(LeftPWM)
+                LeftEncoder.zero()
+                pv = westHead  # Initial process variable for next state
+                leftState = 3
+                stage.put(3)
+            elif head.get() > 0.02 and head.get() < 3.1:
+                LeftPWM = -10
+                LeftMotor.set_effort(LeftPWM)
+            elif head.get() > 3.1 and head.get() < 6.2:
+                LeftPWM = 10
+                LeftMotor.set_effort(LeftPWM)
             yield 
-                
+        
+        # State 3: Traveling along grid. Controlling for local west heading.
+        elif leftState == 3:
+            LeftEncoder.update()
+            setpoint = westHead
+            kp = 2  # Proportional gain
+            ki = 0.1  # Integral gain
+            integral = 0
+            dt = 0.1  # Time step
+            
+            control, error, integral = pid_controller(setpoint, pv, kp, ki, 
+                                                      integral, dt)
+            # Update process variable based on control output (simplified)
+            pv += control * dt  
+
+            # modify this for east heading
+            if pv < 0 :
+                LeftPWM = 15
+                LeftMotor.set_effort(LeftPWM)
+            elif pv > 0:
+                LeftPWM = 22
+                LeftMotor.set_effort(LeftPWM)
+
+            if LeftEncoder.get_position() >= stage3encoder:
+                stage.put(4)
+                leftState = 4
+
+            yield
+
+        # State 4: Turning to face the wall (local north)
+        elif leftState == 4:
+            if head.get() > 6.2 or head.get() < 0.02:
+                LeftPWM = 0
+                LeftMotor.set_effort(LeftPWM)
+                LeftEncoder.zero()
+                pv = 0  # Initial process variable for next state
+                leftState = 5
+                stage.put(5)
+            elif head.get() > 0.02 and head.get() < 3.1:
+                LeftPWM = -10
+                LeftMotor.set_effort(LeftPWM)
+            elif head.get() > 3.1 and head.get() < 6.2:
+                LeftPWM = 10
+                LeftMotor.set_effort(LeftPWM)
+            yield 
+
+        # Going straight then line following. This is treated as a pure line
+        # state
+        elif leftState == 5:
+            LeftEncoder.update()
+            setpoint = 0 # Central centroid
+            kp = 2  # Proportional gain
+            ki = 0.1  # Integral gain
+            integral = 0
+            dt = 0.1  # Time step
+            
+            control, error, integral = pid_controller(setpoint, pv, kp, ki, 
+                                                      integral, dt)
+            # Update process variable based on control output (simplified)
+            pv += control * dt  
+
+            if pv < 0 :
+                LeftPWM = 15
+                LeftMotor.set_effort(LeftPWM)
+            elif pv > 0:
+                LeftPWM = 22
+                LeftMotor.set_effort(LeftPWM)
+
+            # NOTE: this state will be changed due to Romi hitting a wall.
+            # As such, there is no state change here. It happens above at the
+            # bump sensor check.
+            yield
+
+        # State 6: backing up from wall
+        elif leftState == 6:
+            LeftEncoder.update()
+            LeftPWM = -10
+            LeftMotor.set_effort(LeftPWM)
+            LeftMotor.enable()
+            if LeftEncoder.get() <= stage6encoder:
+                leftState == 7
+                stage.put(7)
+            yield
+
+        # State 7: Turning to face cup (local east)
+        elif leftState == 7:
+            if head.get() > 6.2 or head.get() < 0.02:
+                LeftPWM = 0
+                LeftMotor.set_effort(LeftPWM)
+                LeftEncoder.zero()
+                pv = eastHead  # Initial process variable for next state
+                leftState = 8
+                stage.put(8)
+            elif head.get() > 0.02 and head.get() < 3.1:
+                LeftPWM = -10
+                LeftMotor.set_effort(LeftPWM)
+            elif head.get() > 3.1 and head.get() < 6.2:
+                LeftPWM = 10
+                LeftMotor.set_effort(LeftPWM)
+            yield 
+
+        # State 8: going east and pushing cup
+        elif leftState == 8:
+            LeftEncoder.update()
+            setpoint = eastHead
+            kp = 2  # Proportional gain
+            ki = 0.1  # Integral gain
+            integral = 0
+            dt = 0.1  # Time step
+            
+            control, error, integral = pid_controller(setpoint, pv, kp, ki, 
+                                                      integral, dt)
+            # Update process variable based on control output (simplified)
+            pv += control * dt  
+
+            # modify this for east heading
+            if pv < 0 :
+                LeftPWM = 15
+                LeftMotor.set_effort(LeftPWM)
+            elif pv > 0:
+                LeftPWM = 22
+                LeftMotor.set_effort(LeftPWM)
+
+            if LeftEncoder.get_position() >= stage8encoder:
+                stage.put(9)
+                leftState = 9
+            yield
+        
+        # State 9: Turning to face local north
+        elif leftState == 9:
+            if head.get() > 6.2 or head.get() < 0.02:
+                LeftPWM = 0
+                LeftMotor.set_effort(LeftPWM)
+                LeftEncoder.zero()
+                pv = northHead  # Initial process variable for next state
+                leftState = 10
+                stage.put(10)
+            elif head.get() > 0.02 and head.get() < 3.1:
+                LeftPWM = -10
+                LeftMotor.set_effort(LeftPWM)
+            elif head.get() > 3.1 and head.get() < 6.2:
+                LeftPWM = 10
+                LeftMotor.set_effort(LeftPWM)
+            yield
+
+        # State 10: Going north until line is hit
+        elif leftState == 10:
+            LeftEncoder.update()
+            setpoint = northHead
+            kp = 2  # Proportional gain
+            ki = 0.1  # Integral gain
+            integral = 0
+            dt = 0.1  # Time step
+            
+            control, error, integral = pid_controller(setpoint, pv, kp, ki, 
+                                                      integral, dt)
+            # Update process variable based on control output (simplified)
+            pv += control * dt  
+
+            # modify this for north heading
+            if pv < 0 :
+                LeftPWM = 15
+                LeftMotor.set_effort(LeftPWM)
+            elif pv > 0:
+                LeftPWM = 22
+                LeftMotor.set_effort(LeftPWM)
+
+            if (LeftEncoder.get_position() >= stage10encoder)\
+                and (lineType.get() == 1 or lineType.get() ==3):
+                pv = 0 
+                stage.put(11)
+                leftState = 11
+            yield
+        
+        # State 10: turning to face west
+        elif leftState == 11:
+            if head.get() > 6.2 or head.get() < 0.02:
+                LeftPWM = 0
+                LeftMotor.set_effort(LeftPWM)
+                LeftEncoder.zero()
+                pv = 0  # Initial process variable for next state
+                leftState = 12
+                stage.put(12)
+            elif head.get() > 0.02 and head.get() < 3.1:
+                LeftPWM = -10
+                LeftMotor.set_effort(LeftPWM)
+            elif head.get() > 3.1 and head.get() < 6.2:
+                LeftPWM = 10
+                LeftMotor.set_effort(LeftPWM)
+            yield
+        
+        # State 12: Line following back to the start
+        elif leftState == 12:
+            LeftEncoder.update()
+            setpoint = 0 # Central centroid
+            kp = 2  # Proportional gain
+            ki = 0.1  # Integral gain
+            integral = 0
+            dt = 0.1  # Time step
+            
+            control, error, integral = pid_controller(setpoint, pv, kp, ki, 
+                                                      integral, dt)
+            # Update process variable based on control output (simplified)
+            pv += control * dt  
+
+            # modify this for north heading
+            if pv < 0 :
+                LeftPWM = 15
+                LeftMotor.set_effort(LeftPWM)
+            elif pv > 0:
+                LeftPWM = 22
+                LeftMotor.set_effort(LeftPWM)
+
+            if (LeftEncoder.get_position() >= stage12encoder)\
+                and lineType.get() ==3:
+                stage.put(13)
+                leftState = 13
+            yield
+        
+        # State 13: DONE!
+        elif leftState == 13:
+            LeftMotor.disable()
+            yield
+
+            
 def rightMotor(shares):
-    cent, lineType, head, bumped = shares
+    cent, lineType, head, bumped, stage = shares
+    northHead = 5   # Heading values for romi relative to board
+    eastHead  = 5
+    southHead = 5
+    westHead  = 5
+    stage1right = 100000 # Encoder readings for right wheel for stage 1
+    stage6right = 5000  # Encoder readings for right wheel for stage 6
+    stage8right = 5000  # Encoder readings for right wheel for stage 8
     rightState = 0
     while True:
         # State 0: Initialization
@@ -125,10 +403,15 @@ def rightMotor(shares):
             rightState = 1
             yield
 
-        # State 1: PID control
+        if bumped.get() == 1:
+            RightMotor.disable
+            yield
+
+        # State 1: Line following
         elif rightState ==1:
+            RightEncoder.update()
             setpoint = 0
-            pv = cent.get()  # Initial proscess variable
+            pv = cent.get()  # Initial process variable
             kp = 2 # Proportional gain
             ki = 0.1  # Integral gain
             kd = 0.05  # Derivative gain
@@ -141,14 +424,25 @@ def rightMotor(shares):
             # Update process variable based on control output (simplified)
             pv += control * dt  
             previous_error = error
-            print(pv)
             if pv < 0:
                 RightPWM = 22
                 RightMotor.set_effort(RightPWM)
             elif pv > 0:
+                RightPWM = 15
+                RightMotor.set_effort(RightPWM)
+            yield   
+
+        # State 2: Facing Track East
+        elif rightState == 2:
+            if head.get() > 6.2 or head.get() < 0.02:
+                    RightPWM = 0
+                    RightMotor.set_effort(RightPWM)
+            elif head.get() > 0.02 and head.get() < 3.1:
                 RightPWM = 10
                 RightMotor.set_effort(RightPWM)
-            yield    
+            elif head.get() > 3.1 and head.get() < 6.2:
+                RightPWM = -10
+                RightMotor.set_effort(RightPWM) 
 
 def lineSensor(shares):
     cent,lineType = shares
@@ -179,9 +473,9 @@ def IMU(shares):
         if BNOstate == 0:
             i2c=I2C(1,I2C.CONTROLLER,baudrate = 400000)
             i2c.init(I2C.CONTROLLER)
-            bno = BNO055(i2c)
+            bno = imu.BNO055(i2c)
             bno.mode("CONFIG")
-            # bno.write_coef()
+            bno.write_coef()
             bno.mode("NDOF")
             BNOstate = 1
             yield
@@ -191,26 +485,32 @@ def IMU(shares):
             yield
             
 def BumpSensor(shares):
-    bumped = shares
+    bumped, stage = shares
     bumpState = 0
     # State 0: Initialization
     while True:
         if bumpState == 0:
             # INITIALIZE BUMP SENSORS
-            pass
-        # State 1: Looking for a bump
+            bump = bumpsensor(Pin.cpu.H0,Pin.cpu.H1,Pin.cpu.D2,Pin.cpu.A15,
+                              Pin.cpu.C12,Pin.cpu.C10)
+        # State 1: Looking for a bump. 0 if none, 1 if one.
         elif bumpState == 1:
-            # IMPLEMENT IF BUMP IS FOUND
-            pass
+            bumped.put(bump.checkBumped())
+            if bumped.get() == 1:
+                bumpState = 2
+        # Romi bumped, stop.
+        elif bumpState == 2:
+            bumped.put(1)
+            if stage.get() == 7:
+                bumpState = 1
+            yield
 
 # PID CONTROLLER AND RELATED
-def pid_controller(setpoint, pv, kp, ki, kd, previous_error, integral, dt):
+def pid_controller(setpoint, pv, kp, ki, integral, dt):
     error = setpoint - pv
     integral += error * dt
-    derivative = (error - previous_error) / dt
-    control = kp * error + ki * integral + kd * derivative
+    control = kp * error + ki * integral
     return control, error, integral
-
 
 if __name__ == "__main__":
     main()
