@@ -2,6 +2,7 @@ import motor
 import encoder
 from pyb import Pin, Timer, ADC
 from time import ticks_ms, ticks_diff
+from time import sleep
 
 def leftMotor(shares):
     cent, lineType, head, bumped, stage, batVolt = shares
@@ -63,24 +64,20 @@ def leftMotor(shares):
             setpoint = 0 # Central centroid
             pv = cent.get()
             kp = 1  # Proportional gain
-            ki = 0.1  # Integral gain
+            ki = 0.01  # Integral gain
             t2 = ticks_ms()
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
             
-            integral = (setpoint-pv)*dt
-            control = kp*(setpoint-pv) + ki*integral
-            print(f"Left motor: {control}")          # the more positive, the
-                                                     # more pwm we want
+            integral += (setpoint-pv)*dt
+            control = kp*(pv-setpoint) + ki*integral
+            #print("Centroid: ", cent.get(), "Control: ", control)
+            LPWM = 10
 
             if control < 0:
-                LeftPWM += 2
-                if LeftPWM > 20:
-                    LeftPWM = 20
+                LeftPWM = LPWM - control*-10
             elif control > 0:
-                LeftPWM -=2
-                if LeftPWM < 10:
-                    LeftPWM = 10
+                LeftPWM = LPWM + control*10
             
             LeftMotor.set_effort(LeftPWM)
                 
