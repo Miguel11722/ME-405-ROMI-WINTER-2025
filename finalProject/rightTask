@@ -24,7 +24,7 @@ def rightMotor(shares):
             RightEffort.low()
 
             # PWM Setup
-            RightPWM = 10 # PWM, %
+            RightPWM = 12 # PWM, %
             tim1 = Timer(1, freq = 1000)
             RightSpeed =  tim1.channel(1, pin=RightEffort, mode=Timer.PWM,
                                 pulse_width_percent=RightPWM)
@@ -47,7 +47,7 @@ def rightMotor(shares):
                 RightMotor.disable()
             elif stage.get() == 5:
                 print("stage 6 R")
-                rightState = 6
+                rightState = 6x`
                 stage.put(6)
                 RightMotor.disable()
                 RightEncoder.zero()
@@ -59,22 +59,20 @@ def rightMotor(shares):
             setpoint = 0 # Central centroid
             pv = cent.get()
             kp = 2  # Proportional gain
-            ki = 0.1  # Integral gain
+            ki = 0.01  # Integral gain
             t2 = ticks_ms()
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
             
-            integral = (setpoint-pv)*dt
+            integral += (setpoint-pv)*dt
             control = kp*(setpoint-pv) + ki*integral 
+            RPWM = 12
+           # print(control)
 
             if control > 0:
-                RightPWM += 2
-                if RightPWM > 20:
-                    RightPWM = 20
-            elif control < 0:
-                RightPWM -=2
-                if RightPWM < 10:
-                    RightPWM = 10
+                RightPWM = RPWM - control*-10
+            elif control < 0: 
+                RightPWM = RPWM + control*10
             
             RightMotor.set_effort(RightPWM)
 
