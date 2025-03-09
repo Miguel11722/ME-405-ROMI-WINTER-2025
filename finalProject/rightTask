@@ -47,7 +47,7 @@ def rightMotor(shares):
                 RightMotor.disable()
             elif stage.get() == 5:
                 print("stage 6 R")
-                rightState = 6x`
+                rightState = 6
                 stage.put(6)
                 RightMotor.disable()
                 RightEncoder.zero()
