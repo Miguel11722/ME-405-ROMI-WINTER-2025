@@ -1,0 +1,6 @@
+from gc import collect
+
+def collector(shares):
+    while True:
+        collect()
+        yield
