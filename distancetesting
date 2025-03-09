@@ -1,7 +1,9 @@
-# Motor Set Up
-# Motor Pin Setup
+from pyb import Pin, Timer
+import motor
+import encoder
 
 # PWM Setup
+RightEffort = Pin(Pin.cpu.A8, mode = Pin.OUT_PP)
 RightPWM = 0 # PWM, %
 tim1 = Timer(1, freq = 1000)
 RightSpeed =  tim1.channel(1, pin=RightEffort, mode=Timer.PWM,
@@ -13,6 +15,7 @@ RightMotor.disable()
 RightEncoder.zero()
 
 # PWM Setup
+LeftEffort = Pin(Pin.cpu.A9, mode = Pin.OUT_PP)
 LeftPWM = 0 # PWM, %
 LeftSpeed = tim1.channel(2, pin=LeftEffort, mode=Timer.PWM,
                          pulse_width_percent=LeftPWM)
@@ -22,8 +25,8 @@ LeftMotor.disable()
 LeftEncoder.zero()
 
 input("ready?")
-LeftPWM = 10
-RightPWM = 10
+LeftPWM = -18
+RightPWM = -18
 LeftMotor.set_effort(LeftPWM)
 RightMotor.set_effort(RightPWM)
 RightMotor.enable()
@@ -38,5 +41,5 @@ except:
     RightMotor.disable()
     LeftEncoder.update()
     RightEncoder.update()
-    print(f"Final left encoder reading:{LeftEncoder.get_position()}")
     print(f"Final right encoder reading:{RightEncoder.get_position()}")
+    print(f"Final left encoder reading:{LeftEncoder.get_position()}")
