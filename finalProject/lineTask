@@ -1,0 +1,22 @@
+import analoglinesensor
+from pyb import Pin
+
+def lineSensor(shares):
+    cent,lineType = shares
+    lineState = 0
+    
+    while True:
+        # State 0: Initialization
+        if lineState == 0:
+            sensor = analoglinesensor.LineSensor(Pin.cpu.C2,Pin.cpu.A0,
+                                            Pin.cpu.A1,Pin.cpu.A4,Pin.cpu.B0,
+                                            Pin.cpu.C1,Pin.cpu.C0,Pin.cpu.C3)
+            lineState = 1
+            yield
+        # State 1: Getting centroid and line type. Line type is a normal line
+        # by default.
+        elif lineState == 1:
+            sensor.update()
+            cent.put(sensor.get_centroid())
+            lineType.put(sensor.get_lineType())
+            yield
