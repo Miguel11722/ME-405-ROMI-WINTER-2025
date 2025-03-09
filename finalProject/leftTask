@@ -1,10 +1,10 @@
 import motor
 import encoder
-from pyb import Pin, Timer
+from pyb import Pin, Timer, ADC
 from time import ticks_ms, ticks_diff
 
 def leftMotor(shares):
-    cent, lineType, head, bumped, stage = shares
+    cent, lineType, head, bumped, stage, batVolt = shares
     northHead = 4.01   # Heading values for romi relative to board
     eastHead  = 5.21
     southHead = 0.37
@@ -38,6 +38,10 @@ def leftMotor(shares):
             stage.put(1)
             t1 = ticks_ms()
             integral = 0
+            batADC = ADC(Pin.cpu.B1)
+            batVolt.put(batADC.read()*3.3/4095*14.7/4.7)
+            if batADC.read()*3.3/4095*14.7/4.7 < 2:
+                print("battery voltage 2 or lower")
             print("stage 1 L")
             yield
         
@@ -66,18 +70,19 @@ def leftMotor(shares):
             
             integral = (setpoint-pv)*dt
             control = kp*(setpoint-pv) + ki*integral
+            print(f"Left motor: {control}")          # the more positive, the
+                                                     # more pwm we want
 
-            # modify this for north heading
-            if control < 0 :
-                LeftPWM -= 1
-                if LeftPWM < 15:
-                    LeftPWM = 15
-                LeftMotor.set_effort(LeftPWM)
+            if control < 0:
+                LeftPWM += 2
+                if LeftPWM > 20:
+                    LeftPWM = 20
             elif control > 0:
-                LeftPWM += 1
-                if LeftPWM > 22:
-                    LeftPWM = 22
-                LeftMotor.set_effort(LeftPWM)
+                LeftPWM -=2
+                if LeftPWM < 10:
+                    LeftPWM = 10
+            
+            LeftMotor.set_effort(LeftPWM)
                 
             # Checking that we've gone far enough and that the line sensor is
             # reading all white
