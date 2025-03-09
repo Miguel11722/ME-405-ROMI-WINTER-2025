@@ -1,0 +1,23 @@
+from bumpsensor import bumpsensor
+from pyb import Pin
+
+def BumpSensor(shares):
+    bumped, stage = shares
+    bumpState = 0
+    # State 0: Initialization
+    while True:
+        if bumpState == 0:
+            # INITIALIZE BUMP SENSORS
+            bump = bumpsensor(Pin.cpu.H0,Pin.cpu.H1,Pin.cpu.D2,Pin.cpu.A15,
+                              Pin.cpu.C12,Pin.cpu.C10)
+        # State 1: Looking for a bump. 0 if none, 1 if one.
+        elif bumpState == 1:
+            bumped.put(bump.checkBumped())
+            if bumped.get() == 1:
+                bumpState = 2
+        # Romi bumped, stop.
+        elif bumpState == 2:
+            bumped.put(1)
+            if stage.get() == 7:
+                bumpState = 1
+            yield
