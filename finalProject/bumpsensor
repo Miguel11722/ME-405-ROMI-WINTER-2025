@@ -34,12 +34,12 @@ class bumpsensor:
         bumped = 0
         for i in range(6):
             self.lowList[i] = self.pins[i].value()
-        if self.t2-self.t1 >= 50: # Been 50 ms and pin still low
+        if self.t2-self.t1 >= 50: # Been 100 ms and pin still low
             bumped = 1
             self.t1 = millis()
             self.t2 = millis()
             self.lowPin = -1
-
+        
         else: # See if any pins are low
             try:
                 if self.lowPin == -1:
