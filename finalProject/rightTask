@@ -4,7 +4,7 @@ from pyb import Pin, Timer
 from time import ticks_ms, ticks_diff
 
 def rightMotor(shares):
-    cent, lineType, head, bumped, stage = shares
+    cent, lineType, head, bumped, stage, batVolt = shares
     northHead = 4.01   # Heading values for romi relative to board
     eastHead  = 5.21
     southHead = 0.37
@@ -67,16 +67,16 @@ def rightMotor(shares):
             integral = (setpoint-pv)*dt
             control = kp*(setpoint-pv) + ki*integral 
 
-            if control < 0 :
-                RightPWM -=1
-                if RightPWM <= 15:
-                    RightPWM = 15
-                RightMotor.set_effort(RightPWM)
-            elif control > 0:
-                RightPWM += 1
-                if RightPWM > 22:
-                    RightPWM = 22
-                RightMotor.set_effort(RightPWM)
+            if control > 0:
+                RightPWM += 2
+                if RightPWM > 20:
+                    RightPWM = 20
+            elif control < 0:
+                RightPWM -=2
+                if RightPWM < 10:
+                    RightPWM = 10
+            
+            RightMotor.set_effort(RightPWM)
 
             # Checking that we've gone far enough and that the line sensor is
             # reading all white
@@ -120,18 +120,20 @@ def rightMotor(shares):
             t1 = t2
             
             integral = (setpoint-pv)*dt
-            control = kp*(setpoint-pv) + ki*integral
+            control = kp*(setpoint-pv) + ki*integral # the more positive, the
+                                                     # less pwm we want
 
-            if control < 0 :
-                RightPWM -=1
-                if RightPWM <= 15:
-                    RightPWM = 15
-                RightMotor.set_effort(RightPWM)
-            elif control > 0:
-                RightPWM += 1
-                if RightPWM > 22:
-                    RightPWM = 22
-                RightMotor.set_effort(RightPWM)
+            if control > 0:
+                RightPWM = int(15*(1/control))
+            if control < 0:
+                RightPWM = int(15*abs(control))
+
+            if RightPWM < 10:
+                RightPWM = 10
+            elif RightPWM >30:
+                RightPWM = 30
+            
+            RightMotor.set_effort(RightPWM)
 
             if RightEncoder.get_position() >= stage3encoder or stage.get() == 4:
                 stage.put(4)
