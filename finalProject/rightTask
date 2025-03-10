@@ -26,8 +26,8 @@ def rightMotor(shares):
         southHead = eastHead - (3*3.14159/2)
         westHead = eastHead - 3.14159
     
-    stage1encoder = 23000 # Encoder readings for right wheel for stage 1
-    stage3encoder = 6000 # Encoder readings for right wheel for stage 3
+    stage1encoder = 21000 # Encoder readings for right wheel for stage 1
+    stage3encoder = 4376 # Encoder readings for right wheel for stage 3
     stage6encoder = -436  # Encoder readings for right wheel for stage 6
     stage8encoder = 2360  # Encoder readings for right wheel for stage 8
     stage10encoder = 1130  # Encoder readings for right wheel for stage 10
@@ -65,8 +65,8 @@ def rightMotor(shares):
         if bumped.get() == 1:
             if stage.get() != 5 and stage.get() != 6:
                 RightMotor.disable()
-            elif stage.get() == 5:
-                print("stage 6 R")
+            else:
+                print("stage 6 L")
                 rightState = 6
                 stage.put(6)
                 RightMotor.disable()
@@ -78,7 +78,7 @@ def rightMotor(shares):
             RightEncoder.update()
             setpoint = 0 # Central centroid
             pv = cent.get()
-            kp = 1 # Proportional gain
+            kp = 2 # Proportional gain
             ki = 0.01  # Integral gain
             t2 = ticks_ms()
             dt = ticks_diff(t2,t1)/1000  # Time step
@@ -86,7 +86,7 @@ def rightMotor(shares):
             
             integral += (setpoint-pv)*dt
             control = kp*(setpoint-pv) + ki*integral
-            RPWM = 12*(7.8/bat_level)   # print(control)
+            RPWM = 17*(7.8/bat_level)   # print(control)
 
             RightPWM = RPWM + control*15
             if RightPWM > 30:
@@ -129,7 +129,7 @@ def rightMotor(shares):
             RightEncoder.update()
             setpoint = 0 # Central centroid
             pv = cent.get()
-            kp = 1  # Proportional gain
+            kp = 2  # Proportional gain
             ki = 0.01  # Integral gain
             t2 = ticks_ms()
             dt = ticks_diff(t2,t1)/1000  # Time step
@@ -137,11 +137,13 @@ def rightMotor(shares):
             
             integral += (pv-setpoint)*dt
             control = kp*(pv-setpoint) + ki*integral
-            RPWM = 10*(7.8/bat_level)   # print(control)
+            RPWM = 15*(7.8/bat_level)   # print(control)
 
-            RightPWM = RPWM + control*10
+            RightPWM = RPWM + control*15
             if RightPWM > 20:
                 RightPWM = 20
+            elif RightPWM < 10:
+                RightPWM = 10
 
             RightMotor.set_effort(RightPWM)
 
@@ -198,6 +200,8 @@ def rightMotor(shares):
             # NOTE: this state will be changed due to Romi hitting a wall.
             # As such, there is no state change here. It happens above at the
             # bump sensor check.
+            if stage.get() == 6:
+                rightState = 6
             yield
 
         # State 6: backing up from wall
@@ -207,7 +211,7 @@ def rightMotor(shares):
             RightMotor.set_effort(RightPWM)
             RightMotor.enable()
             # <=, going backwards during this stage/state
-            if RightEncoder.get() <= stage6encoder or stage.get() == 7: 
+            if RightEncoder.get_position() <= stage6encoder or stage.get() == 7: 
                 rightState == 7
                 stage.put(7)
                 print("stage 7 R")
