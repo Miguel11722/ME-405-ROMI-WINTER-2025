@@ -5,11 +5,28 @@ from time import ticks_ms, ticks_diff
 from time import sleep
 
 def leftMotor(shares):
-    cent, lineType, head, bumped, stage, batVolt = shares
-    northHead = 4.40   # Heading values for romi relative to board
-    eastHead  = 5.96
-    southHead = 1.25
-    westHead  = 2.86
+    cent, lineType, head, bumped, stage, batVolt, east = shares
+    eastHead = east.get()
+
+    # BNO055 headings calculate increased heading in the clockwise direction.
+    # The quarter callouts are based on a traditional coordinate system.
+    if eastHead >= 0 and eastHead < (3.14159/2): # q1
+        northHead = eastHead + (3*3.14159/2)
+        southHead = eastHead + (3.14159/2)
+        westHead = eastHead + 3.14159
+    elif eastHead >= (3.14159/2) and eastHead < 3.14159: # q4
+        northHead = eastHead - 3.14159/2
+        southHead = eastHead + 3.14159/2
+        westHead = eastHead + 3.14159
+    elif eastHead >= 3.14159 and eastHead < (3*3.14159/2): # q3
+        northHead = eastHead - 3.14159/2
+        southHead = eastHead + 3.14159/2
+        westHead = eastHead - 3.14159
+    else: # q2
+        northHead = eastHead - (3.14159/2)
+        southHead = eastHead - (3*3.14159/2)
+        westHead = eastHead - 3.14159
+    
     stage1encoder = 23000 # Encoder readings for left wheel for stage 1
     stage3encoder = 6000 # Encoder readings for left wheel for stage 3
     stage6encoder = -424  # Encoder readings for left wheel for stage 6
