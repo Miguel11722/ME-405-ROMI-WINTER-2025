@@ -118,16 +118,14 @@ def rightMotor(shares):
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
             
-            integral = (pv-setpoint)*dt
-            control = kp*(pv-setpoint) + ki*integral # the more positive, the
-                                                     # less pwm we want
-
-            integral += (setpoint-pv)*dt
-            control = kp*(setpoint-pv) + ki*integral
+            integral += (pv-setpoint)*dt
+            control = kp*(pv-setpoint) + ki*integral
             RPWM = 10*(7.8/bat_level)   # print(control)
 
             RightPWM = RPWM + control*10
-            
+            if RightPWM > 20:
+                RightPWM = 20
+
             RightMotor.set_effort(RightPWM)
 
             if RightEncoder.get_position() >= stage3encoder or stage.get() == 4:
@@ -170,19 +168,15 @@ def rightMotor(shares):
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
             
-            integral = (setpoint-pv)*dt
-            control = kp*(setpoint-pv) + ki*integral 
+            integral += (setpoint-pv)*dt
+            control = kp*(setpoint-pv) + ki*integral
+            RPWM = 12*(7.8/bat_level)   # print(control)
 
-            if control < 0 :
-                RightPWM -=1
-                if RightPWM <= 15:
-                    RightPWM = 15
-                RightMotor.set_effort(RightPWM)
-            elif control > 0:
-                RightPWM += 1
-                if RightPWM > 22:
-                    RightPWM = 22
-                RightMotor.set_effort(RightPWM)
+            RightPWM = RPWM + control*15
+            if RightPWM > 30:
+                RightPWM = 30
+            
+            RightMotor.set_effort(RightPWM)
 
             # NOTE: this state will be changed due to Romi hitting a wall.
             # As such, there is no state change here. It happens above at the
@@ -234,19 +228,15 @@ def rightMotor(shares):
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
             
-            integral = (setpoint-pv)*dt
-            control = kp*(setpoint-pv) + ki*integral 
+            integral += (pv-setpoint)*dt
+            control = kp*(pv-setpoint) + ki*integral
+            RPWM = 10*(7.8/bat_level)   # print(control)
 
-            if control < 0 :
-                RightPWM -=1
-                if RightPWM <= 15:
-                    RightPWM = 15
-                RightMotor.set_effort(RightPWM)
-            elif control > 0:
-                RightPWM += 1
-                if RightPWM > 22:
-                    RightPWM = 22
-                RightMotor.set_effort(RightPWM)
+            RightPWM = RPWM + control*10
+            if RightPWM > 20:
+                RightPWM = 20
+
+            RightMotor.set_effort(RightPWM)
 
             if RightEncoder.get_position() >= stage8encoder:
                 stage.put(9)
@@ -286,19 +276,15 @@ def rightMotor(shares):
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
             
-            integral = (setpoint-pv)*dt
-            control = kp*(setpoint-pv) + ki*integral 
+            integral += (pv-setpoint)*dt
+            control = kp*(pv-setpoint) + ki*integral
+            RPWM = 10*(7.8/bat_level)   # print(control)
 
-            if control < 0 :
-                RightPWM -=1
-                if RightPWM <= 15:
-                    RightPWM = 15
-                RightMotor.set_effort(RightPWM)
-            elif control > 0:
-                RightPWM += 1
-                if RightPWM > 22:
-                    RightPWM = 22
-                RightMotor.set_effort(RightPWM)
+            RightPWM = RPWM + control*10
+            if RightPWM > 20:
+                RightPWM = 20
+
+            RightMotor.set_effort(RightPWM)
 
             if ((RightEncoder.get_position() >= stage10encoder)\
                     and (lineType.get() == 1 or lineType.get() ==3)) \
@@ -341,19 +327,15 @@ def rightMotor(shares):
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
             
-            integral = (setpoint-pv)*dt
+            integral += (setpoint-pv)*dt
             control = kp*(setpoint-pv) + ki*integral
+            RPWM = 15*(7.8/bat_level)   # print(control)
 
-            if control < 0 :
-                RightPWM -=1
-                if RightPWM <= 15:
-                    RightPWM = 15
-                RightMotor.set_effort(RightPWM)
-            elif control > 0:
-                RightPWM += 1
-                if RightPWM > 22:
-                    RightPWM = 22
-                RightMotor.set_effort(RightPWM)
+            RightPWM = RPWM + control*15
+            if RightPWM > 30:
+                RightPWM = 30
+
+            RightMotor.set_effort(RightPWM)
 
             if ((RightEncoder.get_position() >= stage12encoder)\
                 and lineType.get() ==3) or stage.get() == 13:
