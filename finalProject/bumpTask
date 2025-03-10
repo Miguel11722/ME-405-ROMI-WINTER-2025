@@ -1,29 +1,31 @@
-from bumpsensor import bumpsensor
+from bumpsensor import BumpSensor
 from pyb import Pin
 
-def BumpSensor(shares):
+def Bump(shares):
     bumped, stage = shares
     bumpState = 0
-    firstBump = 0
+    bumpList = [0 for i in range(6)]
     # State 0: Initialization
     while True:
         if bumpState == 0:
             # INITIALIZE BUMP SENSORS
-            bump = bumpsensor(Pin.cpu.H0,Pin.cpu.H1,Pin.cpu.D2,Pin.cpu.A15,
-                              Pin.cpu.C12,Pin.cpu.C10)
+            sensList = [BumpSensor(Pin.cpu.H0),BumpSensor(Pin.cpu.H1),
+                        BumpSensor(Pin.cpu.D2),BumpSensor(Pin.cpu.A15),
+                        BumpSensor(Pin.cpu.C11),BumpSensor(Pin.cpu.B11)]
             bumpState = 1
             yield
+        
         # State 1: Looking for a bump. 0 if none, 1 if one.
         elif bumpState == 1:
-            if bump.checkBumped() == 1:
-                if stage.get() == 6:
-                    bumped.put(0)
-                else:
-                    bumped.put(1)
-                    bumpState = 2
+            for i in range(6): 
+                bumpList[i] = sensList[i].checkBumped()
+            if sum(bumpList) != 0 and (stage.get() != 5 or stage.get() != 6):
+                bumped.put(1)
             yield
-        # Romi bumped, stop.
+        
+        # State 2: Romi bumped, stop. If we're in stage 6, we ignore bumps.
         elif bumpState == 2:
+            print("bumped")
             bumped.put(1)
             if stage.get() == 6:
                 bumpState = 1
