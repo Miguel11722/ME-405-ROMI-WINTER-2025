@@ -5,6 +5,7 @@ def Bump(shares):
     bumped, stage = shares
     bumpState = 0
     bumpList = [0 for i in range(6)]
+    s6count = 0
     # State 0: Initialization
     while True:
         if bumpState == 0:
@@ -19,15 +20,18 @@ def Bump(shares):
         elif bumpState == 1:
             for i in range(6): 
                 bumpList[i] = sensList[i].checkBumped()
-            if sum(bumpList) != 0 and stage.get() != 6:
+            if sum(bumpList) != 0:
                 bumped.put(1)
             yield
         
         # State 2: Romi bumped, stop. If we're in stage 6, we ignore bumps.
         elif bumpState == 2:
-            print("bumped")
             bumped.put(1)
             if stage.get() == 6:
-                bumpState = 1
+                s6count += 1
+            if s6count >= 5:
+                s6count += 1
                 bumped.put(0)
+            if s6count == 10:
+                bumpState = 1
             yield
