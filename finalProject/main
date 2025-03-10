@@ -11,25 +11,26 @@ def main():
     bumped = task_share.Share('b', thread_protect=False, name="bumped")
     stage = task_share.Share('b', thread_protect=False, name="stage")
     batLevel = task_share.Share('f', thread_protect=False, name="battery")
-
+    east = task_share.Share('f', thread_protect=False, name="east")
+    
     # Initialize tasks
     
     task1 = cotask.Task(leftTask.leftMotor, name="Left Motor", priority=5,
                         period=20, profile=True, trace=False, 
                         shares=(centroid, lineType, heading, bumped, stage,
-                                batLevel))
+                                batLevel, east))
     task2 = cotask.Task(rightTask.rightMotor, name="Right Motor", priority=4,
                         period=20,profile=True, trace=False, 
                         shares=(centroid, lineType, heading, bumped, stage,
-                                batLevel))
+                                batLevel, east))
     task3 = cotask.Task(lineTask.lineSensor, name="Line Sensor", priority=3,
                         period=20,profile=True, trace=False, 
                         shares=(centroid, lineType))
     task4 = cotask.Task(imuTask.BNO, name = "IMU", priority = 1, period = 20, 
-                        profile = True, trace = False, shares = (heading))
-    '''task5 = cotask.Task(bumpTask.Bump, name = "Bump Sensor", priority = 2,
+                        profile = True, trace = False, shares = (heading, east))
+    task5 = cotask.Task(bumpTask.Bump, name = "Bump Sensor", priority = 2,
                         period = 15, profile = True, trace = False,
-                        shares = (bumped, stage))'''
+                        shares = (bumped, stage))
     task6 = cotask.Task(gcTask.collector, name = "gc", priority = 0,
                         period = 200, profile = True, trace = False,
                         shares = (stage))
@@ -39,7 +40,7 @@ def main():
     cotask.task_list.append(task2)
     cotask.task_list.append(task3)
     cotask.task_list.append(task4)
-    '''cotask.task_list.append(task5)'''
+    cotask.task_list.append(task5)
     cotask.task_list.append(task6)
     
     # Run the memory garbage collector to ensure memory is as defragmented as
