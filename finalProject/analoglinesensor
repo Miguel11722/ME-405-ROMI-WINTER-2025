@@ -123,7 +123,7 @@ class LineSensor:
             else:
                 normList[i] = 0
 
-        if sum(normList) == 0 and self.centroid == 0:
+        if sum(normList) == 0:
             self.lineType = 2
         elif sum(normList) >= 5:
             self.lineType = 3
