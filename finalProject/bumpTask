@@ -19,7 +19,7 @@ def Bump(shares):
         elif bumpState == 1:
             for i in range(6): 
                 bumpList[i] = sensList[i].checkBumped()
-            if sum(bumpList) != 0 and (stage.get() != 5 or stage.get() != 6):
+            if sum(bumpList) != 0 and stage.get() != 6:
                 bumped.put(1)
             yield
         
