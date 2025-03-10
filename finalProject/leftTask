@@ -2,7 +2,6 @@ import motor
 import encoder
 from pyb import Pin, Timer, ADC
 from time import ticks_ms, ticks_diff
-from time import sleep
 
 def leftMotor(shares):
     cent, lineType, head, bumped, stage, batVolt, east = shares
@@ -34,7 +33,6 @@ def leftMotor(shares):
     stage8encoder = 2410  # Encoder readings for left wheel for stage 8
     stage10encoder = 1159  # Encoder readings for left wheel for stage 10
     stage12encoder = 1557  # Encoder readings for left wheel for stage 12
-    diamond = 0
     leftState = 0
     while True:
         # State 0: Initialization
@@ -45,7 +43,7 @@ def leftMotor(shares):
             
             # PWM Setup
             LeftPWM = 15 # PWM, %
-            tim1 = Timer(1, freq = 1000)
+            tim1 = Timer(1, freq = 20000)
             LeftSpeed = tim1.channel(2, pin=LeftEffort, mode=Timer.PWM,
                                 pulse_width_percent=LeftPWM)
             LeftMotor = motor.Motor(LeftSpeed,Pin.cpu.A6,Pin.cpu.A7)
@@ -69,14 +67,7 @@ def leftMotor(shares):
         
         # Sort of like an external interrupt for bump sensors
         if bumped.get() == 1:
-            if stage.get() != 5 and stage.get() != 6:
-                LeftMotor.disable()
-            else:
-                print("stage 6 L")
-                leftState = 6
-                stage.put(6)
-                LeftMotor.disable()
-                LeftEncoder.zero()
+            LeftMotor.disable()
             yield
         
         # State 1: Line following
@@ -92,14 +83,13 @@ def leftMotor(shares):
             
             integral += (pv-setpoint)*dt
             control = kp*(pv-setpoint) + ki*integral
-            LPWM = 17*(7.8/bat_level)
+            LPWM = 20*(7.8/bat_level)
 
             LeftPWM = LPWM + control*15
             if LeftPWM > 30:
                 LeftPWM = 30
 
             LeftMotor.set_effort(LeftPWM)
-            print(f"head: {head.get()}, west: {westHead}")
             # Checking that we've gone far enough and that the line sensor is
             # reading all white
             if ((LeftEncoder.get_position() >= stage1encoder) and \
@@ -112,7 +102,6 @@ def leftMotor(shares):
 
         # State 2: Start of grid, checking heading. Want to face local west
         elif leftState == 2:
-            print(f"head: {head.get()}, west: {westHead}")  
             if head.get() > (westHead-0.02) and head.get() < (westHead+0.02) \
                 or stage.get() == 3:
                 LeftPWM = 0
@@ -146,7 +135,7 @@ def leftMotor(shares):
             integral += (setpoint-pv)*dt
             control = kp*(setpoint-pv) + ki*integral
             #print("Centroid: ", cent.get(), "Control: ", control)
-            LPWM = 15*(7.8/bat_level)
+            LPWM = 19*(7.8/bat_level)
             
             LeftPWM = LPWM + control*15
             if LeftPWM > 20:
@@ -155,7 +144,6 @@ def leftMotor(shares):
                 LeftPWM = 10
             
             LeftMotor.set_effort(LeftPWM)
-            print(f"head: {head.get()}, west: {westHead}")
             if LeftEncoder.get_position() >= stage3encoder or stage.get() == 4:
                 stage.put(4)
                 leftState = 4
@@ -176,10 +164,10 @@ def leftMotor(shares):
                 stage.put(5)
                 print("stage 5 L")
             elif head.get() < (northHead-0.02) and head.get() > (northHead - 3.14):
-                LeftPWM = 10
+                LeftPWM = 15
                 LeftMotor.set_effort(LeftPWM)
             else:
-                LeftPWM = -10
+                LeftPWM = -15
                 LeftMotor.set_effort(LeftPWM)
             yield 
 
@@ -197,7 +185,7 @@ def leftMotor(shares):
             
             integral += (pv-setpoint)*dt
             control = kp*(pv-setpoint) + ki*integral
-            LPWM = 12*(7.8/bat_level)
+            LPWM = 18*(7.8/bat_level)
 
             LeftPWM = LPWM + control*15
             if LeftPWM > 30:
@@ -208,19 +196,24 @@ def leftMotor(shares):
             # NOTE: this state will be changed due to Romi hitting a wall.
             # As such, there is no state change here. It happens above at the
             # bump sensor check.
-            if stage.get() == 6:
+            if bumped.get() == 2 or stage.get() == 6:
+                print("stage 6 L")
+                LeftEncoder.zero()
+                t1 = ticks_ms()
+                stage.put(6)
                 leftState = 6
             yield
 
         # State 6: backing up from wall
         elif leftState == 6:
             LeftEncoder.update()
-            LeftPWM = -10
+            LeftPWM = -15
+            print(f"left state: {leftState}")
             LeftMotor.set_effort(LeftPWM)
-            LeftMotor.enable()
+            print(f"l enc: {LeftEncoder.get_position()}")
             # <=, going backwards during this stage/state
             if LeftEncoder.get_position() <= stage6encoder or stage.get() == 7: 
-                leftState == 7
+                leftState = 7
                 stage.put(7)
                 print("stage 7 L")
             yield
