@@ -1,16 +1,16 @@
 import motor
 import encoder
-from pyb import Pin, Timer
+from pyb import Pin, Timer, ADC
 from time import ticks_ms, ticks_diff
 
 def rightMotor(shares):
     cent, lineType, head, bumped, stage, batVolt = shares
-    northHead = 4.01   # Heading values for romi relative to board
-    eastHead  = 5.21
-    southHead = 0.37
-    westHead  = 2.27
-    stage1encoder = 50000 # Encoder readings for right wheel for stage 1
-    stage3encoder = 4376 # Encoder readings for right wheel for stage 3
+    northHead = 4.40   # Heading values for romi relative to board
+    eastHead  = 5.96
+    southHead = 1.25
+    westHead  = 2.86
+    stage1encoder = 23000 # Encoder readings for right wheel for stage 1
+    stage3encoder = 6000 # Encoder readings for right wheel for stage 3
     stage6encoder = -436  # Encoder readings for right wheel for stage 6
     stage8encoder = 2360  # Encoder readings for right wheel for stage 8
     stage10encoder = 1130  # Encoder readings for right wheel for stage 10
@@ -24,7 +24,7 @@ def rightMotor(shares):
             RightEffort.low()
 
             # PWM Setup
-            RightPWM = 12 # PWM, %
+            RightPWM = 15 # PWM, %
             tim1 = Timer(1, freq = 1000)
             RightSpeed =  tim1.channel(1, pin=RightEffort, mode=Timer.PWM,
                                 pulse_width_percent=RightPWM)
@@ -38,9 +38,12 @@ def rightMotor(shares):
             stage.put(1)
             t1 = ticks_ms()
             integral = 0
+            batADC = ADC(Pin.cpu.B1)
+            batVolt.put(batADC.read()*3.3/4095*14.7/4.7)
+            bat_level = batADC.read()*3.3/4095*14.7/4.7
             print("stage 1 R")
             yield
-
+        
         # Sort of like an external interrupt for bump sensors
         if bumped.get() == 1:
             if stage.get() != 5 and stage.get() != 6:
@@ -58,21 +61,19 @@ def rightMotor(shares):
             RightEncoder.update()
             setpoint = 0 # Central centroid
             pv = cent.get()
-            kp = 2  # Proportional gain
+            kp = 1 # Proportional gain
             ki = 0.01  # Integral gain
             t2 = ticks_ms()
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
             
             integral += (setpoint-pv)*dt
-            control = kp*(setpoint-pv) + ki*integral 
-            RPWM = 12
-           # print(control)
+            control = kp*(setpoint-pv) + ki*integral
+            RPWM = 12*(7.8/bat_level)   # print(control)
 
-            if control > 0:
-                RightPWM = RPWM - control*-10
-            elif control < 0: 
-                RightPWM = RPWM + control*10
+            RightPWM = RPWM + control*15
+            if RightPWM > 30:
+                RightPWM = 30
             
             RightMotor.set_effort(RightPWM)
 
@@ -87,7 +88,7 @@ def rightMotor(shares):
 
         # State 2: Start of grid, checking heading. Want to face local west
         elif rightState == 2:     
-            if head.get() > westHead-0.02 or head.get() < westHead+0.02 \
+            if head.get() > (westHead-0.02) and head.get() < (westHead+0.02) \
                 or stage.get() == 3:
                 RightPWM = 0
                 RightMotor.set_effort(RightPWM)
@@ -98,10 +99,10 @@ def rightMotor(shares):
                 rightState = 3
                 stage.put(3)
                 print("stage 3 R")
-            elif head.get() > westHead+0.02 and head.get() < westHead + 3.14:
+            elif head.get() > (westHead+0.02) and head.get() < (westHead + 3.14):
                 RightPWM = 10
                 RightMotor.set_effort(RightPWM)
-            elif head.get() > westHead + 3.14 and head.get() < westHead-0.02:
+            else:
                 RightPWM = -10
                 RightMotor.set_effort(RightPWM)
             yield 
@@ -111,25 +112,21 @@ def rightMotor(shares):
             RightEncoder.update()
             setpoint = 0 # Central centroid
             pv = cent.get()
-            kp = 2  # Proportional gain
-            ki = 0.1  # Integral gain
+            kp = 1  # Proportional gain
+            ki = 0.01  # Integral gain
             t2 = ticks_ms()
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
             
-            integral = (setpoint-pv)*dt
-            control = kp*(setpoint-pv) + ki*integral # the more positive, the
+            integral = (pv-setpoint)*dt
+            control = kp*(pv-setpoint) + ki*integral # the more positive, the
                                                      # less pwm we want
 
-            if control > 0:
-                RightPWM = int(15*(1/control))
-            if control < 0:
-                RightPWM = int(15*abs(control))
+            integral += (setpoint-pv)*dt
+            control = kp*(setpoint-pv) + ki*integral
+            RPWM = 10*(7.8/bat_level)   # print(control)
 
-            if RightPWM < 10:
-                RightPWM = 10
-            elif RightPWM >30:
-                RightPWM = 30
+            RightPWM = RPWM + control*10
             
             RightMotor.set_effort(RightPWM)
 
@@ -142,7 +139,7 @@ def rightMotor(shares):
 
         # State 4: Turning to face the wall (local north)
         elif rightState == 4:
-            if head.get() > northHead - 0.02 or head.get() < northHead + 0.02\
+            if head.get() > (northHead-0.02) and head.get() < (northHead+0.02)\
                   or stage.get() == 5:
                 RightPWM = 0
                 RightMotor.set_effort(RightPWM)
@@ -153,11 +150,11 @@ def rightMotor(shares):
                 rightState = 5
                 stage.put(5)
                 print("stage 5 R")
-            elif head.get() > northHead + 0.02 and head.get() < northHead-3.14:
-                RightPWM = 10
-                RightMotor.set_effort(RightPWM)
-            elif head.get() > northHead - 3.14 and head.get() < northHead-0.02:
+            elif head.get() < (northHead-0.02) and head.get() > (northHead - 3.14):
                 RightPWM = -10
+                RightMotor.set_effort(RightPWM)
+            else:
+                RightPWM = 10
                 RightMotor.set_effort(RightPWM)
             yield 
 
@@ -207,7 +204,7 @@ def rightMotor(shares):
 
         # State 7: Turning to face cup (local east)
         elif rightState == 7:
-            if head.get() > eastHead - 0.02 or head.get() < eastHead + 0.02\
+            if head.get() > (eastHead-0.02) and head.get() < (eastHead+0.02)\
                  or stage.get() == 8:
                 RightPWM = 0
                 RightMotor.set_effort(RightPWM)
@@ -218,11 +215,11 @@ def rightMotor(shares):
                 rightState = 8
                 stage.put(8)
                 print("stage 8 R")
-            elif head.get() > eastHead + 0.02 and head.get() < eastHead - 3.14:
-                RightPWM = 10
-                RightMotor.set_effort(RightPWM)
-            elif head.get() > eastHead - 3.14 and head.get() < eastHead - 0.02:
+            elif head.get() < (eastHead-0.02) and head.get() > (eastHead - 3.14):
                 RightPWM = -10
+                RightMotor.set_effort(RightPWM)
+            else:
+                RightPWM = 10
                 RightMotor.set_effort(RightPWM)
             yield 
 
@@ -259,7 +256,7 @@ def rightMotor(shares):
         
         # State 9: Turning to face local north
         elif rightState == 9:
-            if head.get() > northHead - 0.02 or head.get() < northHead + 0.02\
+            if head.get() > (northHead-0.02) and head.get() < (northHead+0.02)\
                   or stage.get() == 10:
                 RightPWM = 0
                 RightMotor.set_effort(RightPWM)
@@ -270,11 +267,11 @@ def rightMotor(shares):
                 rightState = 10
                 stage.put(10)
                 print("stage 10 R")
-            elif head.get() > northHead + 0.02 and head.get() < northHead-3.14:
-                RightPWM = 10
-                RightMotor.set_effort(RightPWM)
-            elif head.get() > northHead - 3.14 and head.get() < northHead-0.02:
+            elif head.get() < (northHead-0.02) and head.get() > (northHead - 3.14):
                 RightPWM = -10
+                RightMotor.set_effort(RightPWM)
+            else:
+                RightPWM = 10
                 RightMotor.set_effort(RightPWM)
             yield 
 
@@ -314,7 +311,7 @@ def rightMotor(shares):
         
         # State 11: turning to face west
         elif rightState == 11:
-            if head.get() > westHead-0.02 or head.get() < westHead+0.02 \
+            if head.get() > (westHead-0.02) and head.get() < (westHead+0.02) \
                 or stage.get() == 12:
                 RightPWM = 0
                 RightMotor.set_effort(RightPWM)
@@ -325,10 +322,10 @@ def rightMotor(shares):
                 rightState = 12
                 stage.put(12)
                 print("stage 12 R")
-            elif head.get() > westHead+0.02 and head.get() < westHead + 3.14:
+            elif head.get() > (westHead+0.02) and head.get() < (westHead + 3.14):
                 RightPWM = 10
                 RightMotor.set_effort(RightPWM)
-            elif head.get() > westHead + 3.14 and head.get() < westHead-0.02:
+            else:
                 RightPWM = -10
                 RightMotor.set_effort(RightPWM)
             yield 
