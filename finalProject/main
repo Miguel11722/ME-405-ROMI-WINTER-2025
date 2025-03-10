@@ -1,7 +1,7 @@
 import gc
 import cotask
 import task_share
-import leftTask, rightTask, imuTask, lineTask, bumpTask, gcTask
+import leftTask, rightTask, imuTask, lineTask, gcTask, bumpTask
 
 def main():
     # Initialize shares
@@ -27,11 +27,12 @@ def main():
                         shares=(centroid, lineType))
     task4 = cotask.Task(imuTask.BNO, name = "IMU", priority = 1, period = 20, 
                         profile = True, trace = False, shares = (heading))
-    '''task5 = cotask.Task(bumpTask.BumpSensor, name = "Bump Sensor", priority = 2,
+    '''task5 = cotask.Task(bumpTask.Bump, name = "Bump Sensor", priority = 2,
                         period = 15, profile = True, trace = False,
                         shares = (bumped, stage))'''
     task6 = cotask.Task(gcTask.collector, name = "gc", priority = 0,
-                        period = 200, profile = True, trace = False, shares = ())
+                        period = 200, profile = True, trace = False,
+                        shares = (stage))
 
     # Add tasks to task list
     cotask.task_list.append(task1)
