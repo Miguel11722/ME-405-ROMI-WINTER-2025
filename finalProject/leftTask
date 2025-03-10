@@ -74,7 +74,6 @@ def leftMotor(shares):
             
             integral += (pv-setpoint)*dt
             control = kp*(pv-setpoint) + ki*integral
-            #print("Centroid: ", cent.get(), "Control: ", control)
             LPWM = 12*(7.8/bat_level)
 
             LeftPWM = LPWM + control*15
@@ -126,7 +125,6 @@ def leftMotor(shares):
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
             
-            print(f"heading: {pv}, west: {westHead}")
             integral += (setpoint-pv)*dt
             control = kp*(setpoint-pv) + ki*integral
             #print("Centroid: ", cent.get(), "Control: ", control)
@@ -175,16 +173,14 @@ def leftMotor(shares):
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
             
-            integral += (setpoint-pv)*dt
-            control = kp*(setpoint-pv) + ki*integral
-            #print("Centroid: ", cent.get(), "Control: ", control)
-            LPWM = 10
+            integral += (pv-setpoint)*dt
+            control = kp*(pv-setpoint) + ki*integral
+            LPWM = 12*(7.8/bat_level)
 
-            if control < 0:
-                LeftPWM = LPWM - control*-10
-            elif control > 0:
-                LeftPWM = LPWM + control*10
-            
+            LeftPWM = LPWM + control*15
+            if LeftPWM > 30:
+                LeftPWM = 30
+
             LeftMotor.set_effort(LeftPWM)
 
             # NOTE: this state will be changed due to Romi hitting a wall.
@@ -238,14 +234,11 @@ def leftMotor(shares):
             t1 = t2
             
             integral += (setpoint-pv)*dt
-            control = kp*(pv-setpoint) + ki*integral
+            control = kp*(setpoint-pv) + ki*integral
             #print("Centroid: ", cent.get(), "Control: ", control)
-            LPWM = 10
+            LPWM = 10*(7.8/bat_level)
 
-            if control < 0:
-                LeftPWM = LPWM - control*-10
-            elif control > 0:
-                LeftPWM = LPWM + control*10
+            LeftPWM = LPWM + control*10
             
             LeftMotor.set_effort(LeftPWM)
 
@@ -290,12 +283,9 @@ def leftMotor(shares):
             integral += (setpoint-pv)*dt
             control = kp*(setpoint-pv) + ki*integral
             #print("Centroid: ", cent.get(), "Control: ", control)
-            LPWM = 10
+            LPWM = 10*(7.8/bat_level)
 
-            if control < 0:
-                LeftPWM = LPWM - control*-10
-            elif control > 0:
-                LeftPWM = LPWM + control*10
+            LeftPWM = LPWM + control*10
             
             LeftMotor.set_effort(LeftPWM)
 
@@ -340,16 +330,14 @@ def leftMotor(shares):
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
             
-            integral += (setpoint-pv)*dt
-            control = kp*(setpoint-pv) + ki*integral
-            #print("Centroid: ", cent.get(), "Control: ", control)
-            LPWM = 10
+            integral += (pv-setpoint)*dt
+            control = kp*(pv-setpoint) + ki*integral
+            LPWM = 12*(7.8/bat_level)
 
-            if control < 0:
-                LeftPWM = LPWM - control*-10
-            elif control > 0:
-                LeftPWM = LPWM + control*10
-            
+            LeftPWM = LPWM + control*15
+            if LeftPWM > 30:
+                LeftPWM = 30
+
             LeftMotor.set_effort(LeftPWM)
 
             if ((LeftEncoder.get_position() >= stage12encoder)\
