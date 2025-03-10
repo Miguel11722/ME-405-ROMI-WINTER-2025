@@ -1,19 +1,19 @@
-import imu
+import BNO055
 from pyb import I2C
 
-def IMU(shares):
-    head = shares
+def BNO(shares):
+    head, east = shares
     BNOstate = 0
 
     while True:
         # State 0: Initialization
         if BNOstate == 0:
             i2c=I2C(1,I2C.CONTROLLER,baudrate = 400000)
-            i2c.init(I2C.CONTROLLER)
-            bno = imu.BNO055(i2c)
+            bno = BNO055.IMU(i2c)
             bno.mode("CONFIG")
             bno.write_coef()
             bno.mode("NDOF")
+            east.put(bno.heading())
             BNOstate = 1
             yield
         # State 1: Grabbing heading
