@@ -2,8 +2,8 @@
 from pyb import Pin, Timer, millis
 from time import sleep_ms
 def main():
-    bump = bumpsensor(Pin.cpu.H0,Pin.cpu.H1,Pin.cpu.D2,Pin.cpu.A15,Pin.cpu.C12,
-                      Pin.cpu.C10)
+    bump = BumpSensor(Pin.cpu.H0,Pin.cpu.H1,Pin.cpu.D2,Pin.cpu.A15,Pin.cpu.C11,
+                      Pin.cpu.B11)
     
     b = bump.checkBumped()
     
@@ -14,50 +14,33 @@ def main():
             print("bumped!")
 
 
-
-class bumpsensor:
+class BumpSensor:
     '''A bump sensor class that tests if any of the bump sensors havew been'''
     '''triggered.'''
-    def __init__(self,bump0,bump1,bump2,bump3,bump4,bump5):
-        self.pins = [Pin(bump0,mode=Pin.IN),Pin(bump1,mode=Pin.IN),
-                     Pin(bump2,mode=Pin.IN),Pin(bump3,mode=Pin.IN),
-                     Pin(bump4,mode=Pin.IN),Pin(bump5,mode=Pin.IN)]
-        self.lowList = [0 for n in range(6)]
-        self.lowPin = -1   # low pin index. -1 indicates no pins low.
+    def __init__(self,pin):
+        self.pin = Pin(pin,mode=Pin.IN,pull=Pin.PULL_UP)
         self.t1 = millis()
-        self.t2 = millis()
+        self.t2 = self.t1
 
     def checkBumped(self):
         '''Returns a 1 if any pins have been bumped, or 0 if it hasn't been
         bumped or is still checking the debouncing. This is reliant on continual
         checking by the bump sensor task in main.'''
         bumped = 0
-        for i in range(6):
-            self.lowList[i] = self.pins[i].value()
-        if self.t2-self.t1 >= 50: # Been 100 ms and pin still low
+
+        if self.t2-self.t1 >= 50: # Been 200 ms and pin still low
             bumped = 1
             self.t1 = millis()
-            self.t2 = millis()
-            self.lowPin = -1
+            self.t2 = self.t1
         
-        else: # See if any pins are low
-            try:
-                if self.lowPin == -1:
-                    self.lowPin = self.lowList.index(0) # earliest low pin
-                # If the pin is still low, increase the time count
-                elif self.lowList[self.lowPin] == 0:
-                    self.t2 = millis()
-                # If the pin has gone low too soon, reset timer
-                else:
-                    self.lowPin = -1
-                    self.t1 = millis()
-                    self.t2 = millis()
-
-            except: # no pins low, reset
-                self.lowPin = -1
-                self.t1 = millis()
-                self.t2 = millis()
-
+        elif self.pin.value() == 0: # increment value of t2, pin is low
+            self.t2 = millis()
+        
+        else:
+            bumped = 0
+            self.t1 = millis()
+            self.t2 = self.t1
+            
         return bumped
                
 if __name__ == "__main__":
