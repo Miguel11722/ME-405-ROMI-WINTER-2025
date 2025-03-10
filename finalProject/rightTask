@@ -1,6 +1,6 @@
 import motor
 import encoder
-from pyb import Pin, Timer, ADC
+from pyb import Pin, Timer
 from time import ticks_ms, ticks_diff
 
 def rightMotor(shares):
@@ -42,7 +42,7 @@ def rightMotor(shares):
 
             # PWM Setup
             RightPWM = 15 # PWM, %
-            tim1 = Timer(1, freq = 1000)
+            tim1 = Timer(1, freq = 20000)
             RightSpeed =  tim1.channel(1, pin=RightEffort, mode=Timer.PWM,
                                 pulse_width_percent=RightPWM)
             RightMotor = motor.Motor(RightSpeed,Pin.cpu.B3,Pin.cpu.A10)
@@ -55,22 +55,13 @@ def rightMotor(shares):
             stage.put(1)
             t1 = ticks_ms()
             integral = 0
-            batADC = ADC(Pin.cpu.B1)
-            batVolt.put(batADC.read()*3.3/4095*14.7/4.7)
-            bat_level = batADC.read()*3.3/4095*14.7/4.7
+            bat_level = batVolt.get()*3.3/4095*14.7/4.7
             print("stage 1 R")
             yield
         
         # Sort of like an external interrupt for bump sensors
         if bumped.get() == 1:
-            if stage.get() != 5 and stage.get() != 6:
-                RightMotor.disable()
-            else:
-                print("stage 6 L")
-                rightState = 6
-                stage.put(6)
-                RightMotor.disable()
-                RightEncoder.zero()
+            RightMotor.disable()
             yield
         
         # State 1: Line following
@@ -86,7 +77,7 @@ def rightMotor(shares):
             
             integral += (setpoint-pv)*dt
             control = kp*(setpoint-pv) + ki*integral
-            RPWM = 17*(7.8/bat_level)   # print(control)
+            RPWM = 20*(7.8/bat_level)   # print(control)
 
             RightPWM = RPWM + control*15
             if RightPWM > 30:
@@ -137,7 +128,7 @@ def rightMotor(shares):
             
             integral += (pv-setpoint)*dt
             control = kp*(pv-setpoint) + ki*integral
-            RPWM = 15*(7.8/bat_level)   # print(control)
+            RPWM = 19*(7.8/bat_level)   # print(control)
 
             RightPWM = RPWM + control*15
             if RightPWM > 20:
@@ -168,10 +159,10 @@ def rightMotor(shares):
                 stage.put(5)
                 print("stage 5 R")
             elif head.get() < (northHead-0.02) and head.get() > (northHead - 3.14):
-                RightPWM = -10
+                RightPWM = -15
                 RightMotor.set_effort(RightPWM)
             else:
-                RightPWM = 10
+                RightPWM = 15
                 RightMotor.set_effort(RightPWM)
             yield 
 
@@ -189,7 +180,7 @@ def rightMotor(shares):
             
             integral += (setpoint-pv)*dt
             control = kp*(setpoint-pv) + ki*integral
-            RPWM = 12*(7.8/bat_level)   # print(control)
+            RPWM = 18*(7.8/bat_level)   # print(control)
 
             RightPWM = RPWM + control*15
             if RightPWM > 30:
@@ -200,19 +191,24 @@ def rightMotor(shares):
             # NOTE: this state will be changed due to Romi hitting a wall.
             # As such, there is no state change here. It happens above at the
             # bump sensor check.
-            if stage.get() == 6:
+            if bumped.get() == 2 or stage.get() == 6:
+                print("stage 6 R")
+                RightEncoder.zero()
+                t1 = ticks_ms()
+                stage.put(6)
                 rightState = 6
             yield
 
         # State 6: backing up from wall
         elif rightState == 6:
             RightEncoder.update()
-            RightPWM = -10
+            RightPWM = -15
+            print(f"right state: {rightState}")
             RightMotor.set_effort(RightPWM)
-            RightMotor.enable()
+            print(f"r enc: {RightEncoder.get_position()}")
             # <=, going backwards during this stage/state
             if RightEncoder.get_position() <= stage6encoder or stage.get() == 7: 
-                rightState == 7
+                rightState = 7
                 stage.put(7)
                 print("stage 7 R")
             yield
