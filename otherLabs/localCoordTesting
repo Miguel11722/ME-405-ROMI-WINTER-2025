@@ -1,0 +1,154 @@
+from pyb import UART
+import pyb
+from pyb import Pin, I2C, Timer
+from time import sleep
+from BNO055 import IMU
+import motor
+import encoder
+
+northHead = 4.19   # Heading values for romi relative to board
+eastHead  = 5.75
+southHead = 1.01
+westHead  = 2.65
+
+"Blutooth Enable"
+BT_ser = UART(3, 115200)
+pyb.repl_uart(BT_ser)
+
+"This code just prevents motors from spinning for no reason"
+leftEnable = Pin(Pin.cpu.A7, mode = Pin.OUT_PP, value = 0)
+leftEnable.low()
+rightEnable = Pin(Pin.cpu.C6, mode = Pin.OUT_PP, value = 0)
+rightEnable.low()    
+
+dir = input("which direction to test?")
+
+"Initialization for the I2C communication"    
+i2c=I2C(1,I2C.CONTROLLER,baudrate = 400000)
+i2c.init(I2C.CONTROLLER)
+ready = i2c.is_ready(0x28)
+print("Is it ready: ", ready)
+print(i2c.scan())
+
+"Calibration Process for the IMU"
+bno = IMU(i2c)
+bno.mode("CONFIG")
+sleep(1)
+bno.write_coef()
+sleep(1)
+bno.mode("NDOF")
+
+"Motor Actuation"
+# Motor Set Up
+# Motor Pin Setup
+RightEffort = Pin(Pin.cpu.A8, mode = Pin.OUT_PP)
+RightEffort.low()
+
+# PWM Setup
+RightPWM = 0 # PWM, %
+tim1 = Timer(1, freq = 1000)
+RightSpeed =  tim1.channel(1, pin=RightEffort, mode=Timer.PWM,
+                           pulse_width_percent=RightPWM)
+
+RightMotor = motor.Motor(RightSpeed,Pin.cpu.B3,Pin.cpu.A10)
+RightEncoder = encoder.Encoder(3,Pin.cpu.B5,Pin.cpu.B4)
+RightMotor.disable()
+RightEncoder.zero()
+RightMotor.enable()
+
+# Motor Pin Setup
+LeftEffort = Pin(Pin.cpu.A9, mode = Pin.OUT_PP)
+LeftEffort.low()
+
+# PWM Setup
+LeftPWM = 0 # PWM, %
+tim1 = Timer(1, freq = 1000)
+LeftSpeed = tim1.channel(2, pin=LeftEffort, mode=Timer.PWM,
+                         pulse_width_percent=LeftPWM)
+LeftMotor = motor.Motor(LeftSpeed,Pin.cpu.A6,Pin.cpu.A7)
+LeftEncoder = encoder.Encoder(8,Pin.cpu.C7,Pin.cpu.C6)
+LeftMotor.disable()
+LeftEncoder.zero()
+LeftMotor.enable()
+
+if dir == "west" or dir == "West":
+    '''West'''
+    while True:      
+        heading = bno.heading()
+        if heading > (westHead-0.02) and heading < (westHead+0.02):
+            LeftPWM = 0
+            RightPWM = 0
+            LeftMotor.set_effort(LeftPWM)
+            RightMotor.set_effort(RightPWM)
+        elif heading > (westHead+0.02) and heading < (westHead + 3.14):
+            LeftPWM = -10
+            RightPWM = 10
+            LeftMotor.set_effort(LeftPWM)
+            RightMotor.set_effort(RightPWM)
+        else:
+            LeftPWM = 10
+            RightPWM = -10
+            LeftMotor.set_effort(LeftPWM)
+            RightMotor.set_effort(RightPWM)
+        print("Heading: ", heading)
+elif dir == "east" or dir == "East":
+    '''East'''
+    while True:      
+        heading = bno.heading()
+        if heading > (eastHead-0.02) and heading < (eastHead+0.02):
+            LeftPWM = 0
+            RightPWM = 0
+            LeftMotor.set_effort(LeftPWM)
+            RightMotor.set_effort(RightPWM)
+        elif heading < (eastHead-0.02) and heading > (eastHead - 3.14):
+            LeftPWM = 10
+            RightPWM = -10
+            LeftMotor.set_effort(LeftPWM)
+            RightMotor.set_effort(RightPWM)
+        else:
+            LeftPWM = -10
+            RightPWM = 10
+            LeftMotor.set_effort(LeftPWM)
+            RightMotor.set_effort(RightPWM)
+        print("Heading: ", heading)
+elif dir == "north" or dir == "North":
+    '''North'''
+    while True:      
+        heading = bno.heading()
+        if heading > (northHead-0.02) and heading < (northHead+0.02):
+            LeftPWM = 0
+            RightPWM = 0
+            LeftMotor.set_effort(LeftPWM)
+            RightMotor.set_effort(RightPWM)
+        elif heading < (northHead-0.02) and heading > (northHead - 3.14):
+            LeftPWM = 10
+            RightPWM = -10
+            LeftMotor.set_effort(LeftPWM)
+            RightMotor.set_effort(RightPWM)
+        else:
+            LeftPWM = -10
+            RightPWM = 10
+            LeftMotor.set_effort(LeftPWM)
+            RightMotor.set_effort(RightPWM)
+        print("Heading: ", heading)
+
+elif dir == "true north":
+    while True:
+        heading = bno.heading()
+        if heading > 6.2 or heading < 0.02:
+            LeftPWM = 0
+            RightPWM = 0
+            LeftMotor.set_effort(LeftPWM)
+            RightMotor.set_effort(RightPWM)
+        elif heading > 0.02 and heading < 3.1:
+            LeftPWM = -10
+            RightPWM = 10
+            LeftMotor.set_effort(LeftPWM)
+            RightMotor.set_effort(RightPWM)
+        elif heading > 3.1 and heading < 6.2:
+            LeftPWM = 10
+            RightPWM = -10
+            LeftMotor.set_effort(LeftPWM)
+            RightMotor.set_effort(RightPWM)
+        print("Heading: ", heading)
+
