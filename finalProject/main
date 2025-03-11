@@ -16,15 +16,15 @@ def main():
     # Initialize tasks
     
     task1 = cotask.Task(leftTask.leftMotor, name="Left Motor", priority=5,
-                        period=20, profile=True, trace=False, 
+                        period=8, profile=True, trace=False, 
                         shares=(centroid, lineType, heading, bumped, stage,
                                 batLevel, east))
     task2 = cotask.Task(rightTask.rightMotor, name="Right Motor", priority=4,
-                        period=20,profile=True, trace=False, 
+                        period=8,profile=True, trace=False, 
                         shares=(centroid, lineType, heading, bumped, stage,
                                 batLevel, east))
     task3 = cotask.Task(lineTask.lineSensor, name="Line Sensor", priority=3,
-                        period=20,profile=True, trace=False, 
+                        period=15,profile=True, trace=False, 
                         shares=(centroid, lineType))
     task4 = cotask.Task(imuTask.BNO, name = "IMU", priority = 1, period = 20, 
                         profile = True, trace = False, shares = (heading, east))
