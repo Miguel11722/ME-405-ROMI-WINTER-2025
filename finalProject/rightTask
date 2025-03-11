@@ -26,8 +26,8 @@ def rightMotor(shares):
         southHead = eastHead - (3*3.14159/2)
         westHead = eastHead - 3.14159
     
-    stage1encoder = 21000 # Encoder readings for right wheel for stage 1
-    stage3encoder = 4376 # Encoder readings for right wheel for stage 3
+    stage1encoder = 25000 # Encoder readings for right wheel for stage 1
+    stage3encoder = 4776 # Encoder readings for right wheel for stage 3
     stage6encoder = -436  # Encoder readings for right wheel for stage 6
     stage8encoder = 2360  # Encoder readings for right wheel for stage 8
     stage10encoder = 1130  # Encoder readings for right wheel for stage 10
@@ -70,14 +70,14 @@ def rightMotor(shares):
             setpoint = 0 # Central centroid
             pv = cent.get()
             kp = 2 # Proportional gain
-            ki = 0.01  # Integral gain
+            ki = 0.001  # Integral gain
             t2 = ticks_ms()
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
             
             integral += (setpoint-pv)*dt
             control = kp*(setpoint-pv) + ki*integral
-            RPWM = 20*(7.8/bat_level)   # print(control)
+            RPWM = 27*(7.8/bat_level)   # print(control)
             #print("RPWM: ", RPWM)
 
             RightPWM = RPWM + control*15
@@ -197,7 +197,7 @@ def rightMotor(shares):
                 rightState = 6
             yield
 
-        # State 6: backing up from wall
+         # State 6: backing up from wall
         elif rightState == 6:
             RightEncoder.update()
             setpoint = northHead # romi facing north
