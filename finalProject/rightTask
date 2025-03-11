@@ -10,9 +10,9 @@ def rightMotor(shares):
     # BNO055 headings calculate increased heading in the clockwise direction.
     # The quarter callouts are based on a traditional coordinate system.
     if eastHead >= 0 and eastHead < (3.14159/2): # q1
-        northHead = eastHead + (3*3.14159/2)
+        northHead = eastHead + (3*3.14159/2) - 0.05
         southHead = eastHead + (3.14159/2)
-        westHead = eastHead + 3.14159 - 0.1
+        westHead = eastHead + 3.14159 - 0.08
     elif eastHead >= (3.14159/2) and eastHead < 3.14159: # q4
         northHead = eastHead - 3.14159/2
         southHead = eastHead + 3.14159/2
@@ -26,12 +26,12 @@ def rightMotor(shares):
         southHead = eastHead - (3*3.14159/2)
         westHead = eastHead - 3.14159
     
-    stage1encoder = 25000 # Encoder readings for right wheel for stage 1
+    stage1encoder = 25600 # Encoder readings for right wheel for stage 1
     stage3encoder = 4576 # Encoder readings for right wheel for stage 3
-    stage6encoder = -436  # Encoder readings for right wheel for stage 6
-    stage8encoder = 2560  # Encoder readings for right wheel for stage 8
-    stage10encoder = 1630  # Encoder readings for right wheel for stage 10
-    stage12encoder = 1557  # Encoder readings for right wheel for stage 12
+    stage6encoder = -700  # Encoder readings for right wheel for stage 6
+    stage8encoder = 3560  # Encoder readings for right wheel for stage 8
+    stage10encoder = 2830  # Encoder readings for right wheel for stage 10
+    stage12encoder = 1556  # Encoder readings for right wheel for stage 12
     rightState = 0
     while True:
         # State 0: Initialization
@@ -68,19 +68,22 @@ def rightMotor(shares):
             RightEncoder.update()
             setpoint = 0 # Central centroid
             pv = cent.get()
-            kp = 3.5 # Proportional gain
-            ki = 0.1  # Integral gain
+            kp = 4 # Proportional gain
+            ki = 0.2 # Integral gain
             t2 = ticks_ms()
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
             
+            
             integral += (setpoint-pv)*dt
             control = kp*(setpoint-pv) + ki*integral
-            RPWM = 27*(7.8/bat_level)
+            RPWM = 20*(7.8/bat_level)
 
             RightPWM = RPWM + control*15
             if RightPWM > 30:
                 RightPWM = 30
+            elif RightPWM < 1:
+                RightPWM = 1
             
             RightMotor.set_effort(RightPWM)
 
@@ -192,21 +195,21 @@ def rightMotor(shares):
         # State 6: backing up from wall
         elif rightState == 6:
             RightEncoder.update()
-            setpoint = northHead # romi facing north
+            setpoint = northHead # Central centroid
             pv = head.get()
-            kp = 2  # Proportional gain
-            ki = 0.001  # Integral gain
+            kp = 3  # Proportional gain
+            ki = 0.01  # Integral gain
             t2 = ticks_ms()
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
             
-            integral += (pv-setpoint)*dt
-            control = kp*(pv-setpoint) + ki*integral
+            integral = (setpoint-pv)*dt
+            control = kp*(setpoint-pv) + ki*integral
             RPWM = -20*(7.8/bat_level)
 
             RightPWM = RPWM - control*15
-            if RightPWM > 20:
-                RightPWM = 20
+            if RightPWM < -25:
+                RightPWM = -25
 
             RightMotor.set_effort(RightPWM)
 
@@ -247,22 +250,23 @@ def rightMotor(shares):
             RightEncoder.update()
             setpoint = eastHead # facing east
             pv = head.get()
-            kp = 2  # Proportional gain
-            ki = 0.001  # Integral gain
+            kp = 3  # Proportional gain
+            ki = 0.01  # Integral gain
             t2 = ticks_ms()
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
-
+            
             if pv > 3.14159:
                 pv = head.get()-6.28318
-            
+
             integral += (pv-setpoint)*dt
             control = kp*(pv-setpoint) + ki*integral
             RPWM = 20*(7.8/bat_level)
 
             RightPWM = RPWM + control*15
-            if RightPWM > 20:
-                RightPWM = 20
+
+            if RightPWM > 25:
+                RightPWM = 25
 
             RightMotor.set_effort(RightPWM)
 
@@ -298,8 +302,8 @@ def rightMotor(shares):
             RightEncoder.update()
             setpoint = northHead # facing north
             pv = head.get()
-            kp = 2  # Proportional gain
-            ki = 0.001  # Integral gain
+            kp = 5  # Proportional gain
+            ki = 0.01  # Integral gain
             t2 = ticks_ms()
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
@@ -309,8 +313,9 @@ def rightMotor(shares):
             RPWM = 20*(7.8/bat_level)
 
             RightPWM = RPWM + control*15
-            if RightPWM > 20:
-                RightPWM = 20
+
+            if RightPWM > 25:
+                RightPWM = 25
 
             RightMotor.set_effort(RightPWM)
 
@@ -348,7 +353,7 @@ def rightMotor(shares):
             RightEncoder.update()
             setpoint = 0 # Central centroid
             pv = cent.get()
-            kp = 2  # Proportional gain
+            kp = 3  # Proportional gain
             ki = 0.001  # Integral gain
             t2 = ticks_ms()
             dt = ticks_diff(t2,t1)/1000  # Time step
@@ -356,7 +361,7 @@ def rightMotor(shares):
             
             integral += (setpoint-pv)*dt
             control = kp*(setpoint-pv) + ki*integral
-            RPWM = 15*(7.8/bat_level)
+            RPWM = 23*(7.8/bat_level)
 
             RightPWM = RPWM + control*15
             if RightPWM > 30:
