@@ -257,22 +257,21 @@ def leftMotor(shares):
         elif leftState == 8:
             LeftEncoder.update()
             setpoint = eastHead # facing east
-            pv = eastHead.get()
+            pv = head.get()
             kp = 2  # Proportional gain
             ki = 0.001  # Integral gain
             t2 = ticks_ms()
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
 
-            if pv >= 3.14159:
-                pv = eastHead.get()-6.28318
+            if pv > 3.14159:
+                pv = head.get()-6.28318
             
             integral += (setpoint-pv)*dt
             control = kp*(setpoint-pv) + ki*integral
-            #print("Centroid: ", cent.get(), "Control: ", control)
-            LPWM = 10*(7.8/bat_level)
+            LPWM = 15*(7.8/bat_level)
 
-            LeftPWM = LPWM + control*10
+            LeftPWM = LPWM + control*15
             
             LeftMotor.set_effort(LeftPWM)
 
@@ -317,9 +316,9 @@ def leftMotor(shares):
             integral += (setpoint-pv)*dt
             control = kp*(setpoint-pv) + ki*integral
             #print("Centroid: ", cent.get(), "Control: ", control)
-            LPWM = 10*(7.8/bat_level)
+            LPWM = 15*(7.8/bat_level)
 
-            LeftPWM = LPWM + control*10
+            LeftPWM = LPWM + control*15
             
             LeftMotor.set_effort(LeftPWM)
 
