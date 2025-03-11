@@ -72,8 +72,8 @@ def leftMotor(shares):
             LeftEncoder.update()
             setpoint = 0 # Central centroid
             pv = cent.get()
-            kp = 4  # Proportional gain
-            ki = 0.01  # Integral gain
+            kp = 3.5  # Proportional gain
+            ki = 0.1  # Integral gain
             t2 = ticks_ms()
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
@@ -139,7 +139,6 @@ def leftMotor(shares):
             if LeftEncoder.get_position() >= stage3encoder or stage.get() == 4:
                 stage.put(4)
                 leftState = 4
-                print("stage 4 L")
             yield
 
         # State 4: Turning to face the wall (local north)
@@ -154,7 +153,6 @@ def leftMotor(shares):
                 t1 = ticks_ms()
                 leftState = 5
                 stage.put(5)
-                print("stage 5 L")
             elif head.get() < (northHead-0.02) and head.get() > (northHead - 3.14):
                 LeftPWM = 15
                 LeftMotor.set_effort(LeftPWM)
@@ -174,15 +172,16 @@ def leftMotor(shares):
             t2 = ticks_ms()
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
-            
             integral += (pv-setpoint)*dt
             control = kp*(pv-setpoint) + ki*integral
             LPWM = 23*(7.8/bat_level)
-
             LeftPWM = LPWM + control*15
             
             if LeftPWM > 30:
                 LeftPWM = 30
+            
+            LeftMotor.set_effort(LeftPWM)
+
 
             if bumped.get() == 2 or stage.get() == 6:
                 print("stage 6 L")
