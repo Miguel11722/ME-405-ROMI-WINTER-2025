@@ -208,7 +208,7 @@ def leftMotor(shares):
             setpoint = northHead # romi faces north
             pv = head.get()
             kp = 2  # Proportional gain
-            ki = 0.01  # Integral gain
+            ki = 0.001  # Integral gain
             t2 = ticks_ms()
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
@@ -245,7 +245,7 @@ def leftMotor(shares):
                 leftState = 8
                 stage.put(8)
                 print("stage 8 L")
-            elif head.get() < (eastMin) and head.get() > (eastHead + 3.14):
+            elif head.get() < (eastMin) or head.get() > (eastHead + 3.14):
                 LeftPWM = 10
                 LeftMotor.set_effort(LeftPWM)
             else:
@@ -257,12 +257,15 @@ def leftMotor(shares):
         elif leftState == 8:
             LeftEncoder.update()
             setpoint = eastHead # facing east
-            pv = cent.get()
-            kp = 1  # Proportional gain
-            ki = 0.01  # Integral gain
+            pv = eastHead.get()
+            kp = 2  # Proportional gain
+            ki = 0.001  # Integral gain
             t2 = ticks_ms()
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
+
+            if pv >= 3.14159:
+                pv = eastHead.get()-6.28318
             
             integral += (setpoint-pv)*dt
             control = kp*(setpoint-pv) + ki*integral
@@ -304,9 +307,9 @@ def leftMotor(shares):
         elif leftState == 10:
             LeftEncoder.update()
             setpoint = northHead # facing north
-            pv = cent.get()
-            kp = 1  # Proportional gain
-            ki = 0.01  # Integral gain
+            pv = head.get()
+            kp = 2 # Proportional gain
+            ki = 0.001  # Integral gain
             t2 = ticks_ms()
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
@@ -355,8 +358,8 @@ def leftMotor(shares):
             LeftEncoder.update()
             setpoint = 0 # Central centroid
             pv = cent.get()
-            kp = 1  # Proportional gain
-            ki = 0.01  # Integral gain
+            kp = 2  # Proportional gain
+            ki = 0.001  # Integral gain
             t2 = ticks_ms()
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
