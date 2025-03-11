@@ -229,7 +229,7 @@ def rightMotor(shares):
                 eastMin = eastHead+6.26318
             else:
                 eastMin = eastHead - 0.02
-            if head.get() > (eastMin) and head.get() < (eastHead+0.02)\
+            if head.get() > (eastMin) or head.get() < (eastHead+0.02)\
                  or stage.get() == 8:
                 RightPWM = 0
                 RightMotor.set_effort(RightPWM)
@@ -269,7 +269,7 @@ def rightMotor(shares):
 
             RightMotor.set_effort(RightPWM)
 
-            if RightEncoder.get_position() >= stage8encoder:
+            if RightEncoder.get_position() >= stage8encoder or stage.get() == 9:
                 stage.put(9)
                 rightState = 9
                 print("stage 9 R")
