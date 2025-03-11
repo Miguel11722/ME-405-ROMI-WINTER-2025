@@ -202,10 +202,22 @@ def rightMotor(shares):
         # State 6: backing up from wall
         elif rightState == 6:
             RightEncoder.update()
-            RightPWM = -15
-            print(f"right state: {rightState}")
+            setpoint = northHead # romi facing north
+            pv = head.get()
+            kp = 1  # Proportional gain
+            ki = 0.01  # Integral gain
+            t2 = ticks_ms()
+            dt = ticks_diff(t2,t1)/1000  # Time step
+            t1 = t2
+            
+            integral += (setpoint-pv)*dt
+            control = kp*(setpoint-pv) + ki*integral
+            RPWM = -18*(7.8/bat_level)   # print(control)
+
+            RightPWM = RPWM - control*15
+            
             RightMotor.set_effort(RightPWM)
-            print(f"r enc: {RightEncoder.get_position()}")
+
             # <=, going backwards during this stage/state
             if RightEncoder.get_position() <= stage6encoder or stage.get() == 7: 
                 rightState = 7
@@ -215,7 +227,11 @@ def rightMotor(shares):
 
         # State 7: Turning to face cup (local east)
         elif rightState == 7:
-            if head.get() > (eastHead-0.02) and head.get() < (eastHead+0.02)\
+            if eastHead - 0.02 <= 0:
+                eastMin = eastHead+6.26318
+            else:
+                eastMin = eastHead - 0.02
+            if head.get() > (eastMin) and head.get() < (eastHead+0.02)\
                  or stage.get() == 8:
                 RightPWM = 0
                 RightMotor.set_effort(RightPWM)
@@ -226,13 +242,13 @@ def rightMotor(shares):
                 rightState = 8
                 stage.put(8)
                 print("stage 8 R")
-            elif head.get() < (eastHead-0.02) and head.get() > (eastHead - 3.14):
+            elif head.get() < (eastMin) and head.get() > (eastHead + 3.14):
                 RightPWM = -10
                 RightMotor.set_effort(RightPWM)
             else:
                 RightPWM = 10
                 RightMotor.set_effort(RightPWM)
-            yield 
+            yield  
 
         # State 8: going east and pushing cup
         elif rightState == 8:
