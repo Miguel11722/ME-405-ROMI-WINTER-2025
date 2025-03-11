@@ -28,10 +28,10 @@ def leftMotor(shares):
         westHead = eastHead - 3.14159
     
     stage1encoder = 25000 # Encoder readings for left wheel for stage 1
-    stage3encoder = 4830 # Encoder readings for left wheel for stage 3
+    stage3encoder = 4630 # Encoder readings for left wheel for stage 3
     stage6encoder = -424  # Encoder readings for left wheel for stage 6
-    stage8encoder = 2410  # Encoder readings for left wheel for stage 8
-    stage10encoder = 1159  # Encoder readings for left wheel for stage 10
+    stage8encoder = 2610  # Encoder readings for left wheel for stage 8
+    stage10encoder = 1659  # Encoder readings for left wheel for stage 10
     stage12encoder = 1557  # Encoder readings for left wheel for stage 12
     leftState = 0
     while True:
@@ -75,7 +75,7 @@ def leftMotor(shares):
             LeftEncoder.update()
             setpoint = 0 # Central centroid
             pv = cent.get()
-            kp = 2  # Proportional gain
+            kp = 3  # Proportional gain
             ki = 0.001  # Integral gain
             t2 = ticks_ms()
             dt = ticks_diff(t2,t1)/1000  # Time step
@@ -114,10 +114,10 @@ def leftMotor(shares):
                 stage.put(3)
                 print("stage 3 L")
             elif head.get() > (westHead+0.02) and head.get() < (westHead + 3.14):
-                LeftPWM = -10
+                LeftPWM = -17
                 LeftMotor.set_effort(LeftPWM)
             else:
-                LeftPWM = 10
+                LeftPWM = 17
                 LeftMotor.set_effort(LeftPWM)
             yield 
         
@@ -135,11 +135,11 @@ def leftMotor(shares):
             integral += (setpoint-pv)*dt
             control = kp*(setpoint-pv) + ki*integral
             #print("Centroid: ", cent.get(), "Control: ", control)
-            LPWM = 19*(7.8/bat_level)
+            LPWM = 16*(7.8/bat_level)
             
             LeftPWM = LPWM + control*15
-            if LeftPWM > 20:
-                LeftPWM = 20
+            if LeftPWM > 30:
+                LeftPWM = 30
             elif LeftPWM < 10:
                 LeftPWM = 10
             
@@ -269,9 +269,10 @@ def leftMotor(shares):
             
             integral += (setpoint-pv)*dt
             control = kp*(setpoint-pv) + ki*integral
-            LPWM = 15*(7.8/bat_level)
+            #print("Centroid: ", cent.get(), "Control: ", control)
+            LPWM = 20*(7.8/bat_level)
 
-            LeftPWM = LPWM + control*15
+            LeftPWM = LPWM + control*10
             
             LeftMotor.set_effort(LeftPWM)
 
@@ -316,14 +317,13 @@ def leftMotor(shares):
             integral += (setpoint-pv)*dt
             control = kp*(setpoint-pv) + ki*integral
             #print("Centroid: ", cent.get(), "Control: ", control)
-            LPWM = 15*(7.8/bat_level)
+            LPWM = 20*(7.8/bat_level)
 
-            LeftPWM = LPWM + control*15
+            LeftPWM = LPWM + control*10
             
             LeftMotor.set_effort(LeftPWM)
 
-            if ((LeftEncoder.get_position() >= stage10encoder)\
-                    and (lineType.get() == 1 or lineType.get() ==3)) \
+            if ((LeftEncoder.get_position() >= stage10encoder))\
                     or stage.get() == 11:
                 pv = 0 
                 stage.put(11)
