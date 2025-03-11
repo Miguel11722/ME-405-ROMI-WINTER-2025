@@ -105,10 +105,7 @@ class LineSensor:
 
     def solve_lineType(self):
         '''Returns the type of line the sensor is currently reading. Could be
-        a line, a fork, all white, or all black. 
-        Note: This is not perfect, and any all white outputs should be checked
-        against the centroid. If the centroid is nonzero, Romi is still over a
-        line.
+        a line, a fork, all white, or all black.
 
         1 - Normal line
         2 - All white
