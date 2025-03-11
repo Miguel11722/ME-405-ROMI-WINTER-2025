@@ -28,7 +28,7 @@ class BumpSensor:
         checking by the bump sensor task in main.'''
         bumped = 0
 
-        if self.t2-self.t1 >= 50: # Been 200 ms and pin still low
+        if self.t2-self.t1 >= 50: # Been 50 ms and pin still low
             bumped = 1
             self.t1 = millis()
             self.t2 = self.t1
