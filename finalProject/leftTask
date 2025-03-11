@@ -58,7 +58,7 @@ def leftMotor(shares):
             integral = 0
             batADC = ADC(Pin.cpu.B1)
             batVolt.put(batADC.read()*3.3/4095*14.7/4.7)
-            bat_level = batADC.read()*3.3/4095*14.7/4.7
+            bat_level = batVolt.get()
             print(batVolt.get())
             if batADC.read()*3.3/4095*14.7/4.7 < 4:
                 print("battery voltage 4 or lower")
@@ -76,7 +76,7 @@ def leftMotor(shares):
             setpoint = 0 # Central centroid
             pv = cent.get()
             kp = 2  # Proportional gain
-            ki = 0.001  # Integral gain
+            ki = 0.01  # Integral gain
             t2 = ticks_ms()
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
@@ -84,6 +84,7 @@ def leftMotor(shares):
             integral += (pv-setpoint)*dt
             control = kp*(pv-setpoint) + ki*integral
             LPWM = 20*(7.8/bat_level)
+            #print("LPWM: ", LPWM)
 
             LeftPWM = LPWM + control*15
             if LeftPWM > 30:
@@ -144,6 +145,7 @@ def leftMotor(shares):
                 LeftPWM = 10
             
             LeftMotor.set_effort(LeftPWM)
+
             if LeftEncoder.get_position() >= stage3encoder or stage.get() == 4:
                 stage.put(4)
                 leftState = 4
@@ -193,9 +195,6 @@ def leftMotor(shares):
 
             LeftMotor.set_effort(LeftPWM)
 
-            # NOTE: this state will be changed due to Romi hitting a wall.
-            # As such, there is no state change here. It happens above at the
-            # bump sensor check.
             if bumped.get() == 2 or stage.get() == 6:
                 print("stage 6 L")
                 LeftEncoder.zero()
@@ -222,7 +221,7 @@ def leftMotor(shares):
             LeftPWM = LPWM - control*15
 
             LeftMotor.set_effort(LeftPWM)
-            
+
             # <=, going backwards during this stage/state
             if LeftEncoder.get_position() <= stage6encoder or stage.get() == 7: 
                 leftState = 7
