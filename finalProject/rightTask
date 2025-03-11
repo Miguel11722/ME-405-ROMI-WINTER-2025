@@ -56,7 +56,6 @@ def rightMotor(shares):
             t1 = ticks_ms()
             integral = 0
             bat_level = batVolt.get()
-            print("stage 1 R")
             yield
         
         # Sort of like an external interrupt for bump sensors
@@ -77,8 +76,7 @@ def rightMotor(shares):
             
             integral += (setpoint-pv)*dt
             control = kp*(setpoint-pv) + ki*integral
-            RPWM = 27*(7.8/bat_level)   # print(control)
-            #print("RPWM: ", RPWM)
+            RPWM = 25*(7.8/bat_level)
 
             RightPWM = RPWM + control*15
             if RightPWM > 30:
@@ -90,7 +88,6 @@ def rightMotor(shares):
             # reading all white
             if ((RightEncoder.get_position() >= stage1encoder) and \
                 (lineType.get() == 2)) or stage.get() == 2:
-                print("stage 2 R")
                 rightState = 2
                 stage.put(2)
             yield
@@ -107,7 +104,6 @@ def rightMotor(shares):
                 t1 = ticks_ms()
                 rightState = 3
                 stage.put(3)
-                print("stage 3 R")
             elif head.get() > (westHead+0.02) and head.get() < (westHead + 3.14):
                 RightPWM = 17
                 RightMotor.set_effort(RightPWM)
@@ -121,8 +117,7 @@ def rightMotor(shares):
             RightEncoder.update()
             setpoint = westHead # Central centroid
             pv = head.get()
-            print("Heading: ", head.get(), "West: ", setpoint)
-            kp = 2  # Proportional gain
+            kp = 4  # Proportional gain
             ki = 0.01  # Integral gain
             t2 = ticks_ms()
             dt = ticks_diff(t2,t1)/1000  # Time step
@@ -130,13 +125,11 @@ def rightMotor(shares):
             
             integral += (pv-setpoint)*dt
             control = kp*(pv-setpoint) + ki*integral
-            RPWM = 16*(7.8/bat_level)   # print(control)
+            RPWM = 20*(7.8/bat_level)
 
             RightPWM = RPWM + control*15
-            if RightPWM > 30:
-                RightPWM = 30
-            elif RightPWM < 10:
-                RightPWM = 10
+            if RightPWM > 20:
+                RightPWM = 20
 
             RightMotor.set_effort(RightPWM)
 
@@ -209,12 +202,14 @@ def rightMotor(shares):
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
             
-            integral += (setpoint-pv)*dt
-            control = kp*(setpoint-pv) + ki*integral
-            RPWM = -18*(7.8/bat_level)   # print(control)
+            integral += (pv-setpoint)*dt
+            control = kp*(pv-setpoint) + ki*integral
+            RPWM = -20*(7.8/bat_level)
 
             RightPWM = RPWM - control*15
-            
+            if RightPWM > 20:
+                RightPWM = 20
+
             RightMotor.set_effort(RightPWM)
 
             # <=, going backwards during this stage/state
@@ -242,10 +237,10 @@ def rightMotor(shares):
                 stage.put(8)
                 print("stage 8 R")
             elif head.get() < (eastMin) or head.get() > (eastHead + 3.14):
-                RightPWM = -10
+                RightPWM = -15
                 RightMotor.set_effort(RightPWM)
             else:
-                RightPWM = 10
+                RightPWM = 15
                 RightMotor.set_effort(RightPWM)
             yield 
 
@@ -293,10 +288,10 @@ def rightMotor(shares):
                 stage.put(10)
                 print("stage 10 R")
             elif head.get() < (northHead-0.02) and head.get() > (northHead - 3.14):
-                RightPWM = -10
+                RightPWM = -15
                 RightMotor.set_effort(RightPWM)
             else:
-                RightPWM = 10
+                RightPWM = 15
                 RightMotor.set_effort(RightPWM)
             yield 
 
@@ -313,9 +308,9 @@ def rightMotor(shares):
             
             integral += (pv-setpoint)*dt
             control = kp*(pv-setpoint) + ki*integral
-            RPWM = 20*(7.8/bat_level)   # print(control)
+            RPWM = 20*(7.8/bat_level)
 
-            RightPWM = RPWM + control*10
+            RightPWM = RPWM + control*15
             if RightPWM > 20:
                 RightPWM = 20
 
@@ -343,10 +338,10 @@ def rightMotor(shares):
                 stage.put(12)
                 print("stage 12 R")
             elif head.get() > (westHead+0.02) and head.get() < (westHead + 3.14):
-                RightPWM = 10
+                RightPWM = 15
                 RightMotor.set_effort(RightPWM)
             else:
-                RightPWM = -10
+                RightPWM = -15
                 RightMotor.set_effort(RightPWM)
             yield 
         
@@ -363,7 +358,7 @@ def rightMotor(shares):
             
             integral += (setpoint-pv)*dt
             control = kp*(setpoint-pv) + ki*integral
-            RPWM = 15*(7.8/bat_level)   # print(control)
+            RPWM = 15*(7.8/bat_level)
 
             RightPWM = RPWM + control*15
             if RightPWM > 30:
