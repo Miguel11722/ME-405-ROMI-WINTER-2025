@@ -252,7 +252,7 @@ def rightMotor(shares):
         elif rightState == 8:
             RightEncoder.update()
             setpoint = eastHead # facing east
-            pv = eastHead.get()
+            pv = head.get()
             kp = 2  # Proportional gain
             ki = 0.001  # Integral gain
             t2 = ticks_ms()
@@ -260,15 +260,13 @@ def rightMotor(shares):
             t1 = t2
 
             if pv > 3.14159:
-                pv = eastHead.get()-6.28318
+                pv = head.get()-6.28318
             
             integral += (pv-setpoint)*dt
             control = kp*(pv-setpoint) + ki*integral
             RPWM = 15*(7.8/bat_level)
 
             RightPWM = RPWM + control*15
-            if RightPWM > 20:
-                RightPWM = 20
 
             RightMotor.set_effort(RightPWM)
 
@@ -312,11 +310,9 @@ def rightMotor(shares):
             
             integral += (pv-setpoint)*dt
             control = kp*(pv-setpoint) + ki*integral
-            RPWM = 10*(7.8/bat_level)   # print(control)
+            RPWM = 15*(7.8/bat_level)   # print(control)
 
-            RightPWM = RPWM + control*10
-            if RightPWM > 20:
-                RightPWM = 20
+            RightPWM = RPWM + control*15
 
             RightMotor.set_effort(RightPWM)
 
