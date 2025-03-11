@@ -259,14 +259,14 @@ def rightMotor(shares):
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
 
-            if pv >= 3.14159:
+            if pv > 3.14159:
                 pv = eastHead.get()-6.28318
             
             integral += (pv-setpoint)*dt
             control = kp*(pv-setpoint) + ki*integral
-            RPWM = 10*(7.8/bat_level)   # print(control)
+            RPWM = 15*(7.8/bat_level)
 
-            RightPWM = RPWM + control*10
+            RightPWM = RPWM + control*15
             if RightPWM > 20:
                 RightPWM = 20
 
@@ -357,189 +357,6 @@ def rightMotor(shares):
             pv = cent.get()
             kp = 2  # Proportional gain
             ki = 0.001  # Integral gain
-            t2 = ticks_ms()
-            dt = ticks_diff(t2,t1)/1000  # Time step
-            t1 = t2
-            
-            integral += (setpoint-pv)*dt
-            control = kp*(setpoint-pv) + ki*integral
-            RPWM = 15*(7.8/bat_level)   # print(control)
-
-            RightPWM = RPWM + control*15
-            if RightPWM > 30:
-                RightPWM = 30
-
-            RightMotor.set_effort(RightPWM)
-
-            if ((RightEncoder.get_position() >= stage12encoder)\
-                and lineType.get() ==3) or stage.get() == 13:
-                stage.put(13)
-                rightState = 13
-                print("stage 13 R")
-            yield
-        
-        # State 13: DONE!
-        elif rightState == 13:
-            RightMotor.disable()
-            yield
-
-         # State 6: backing up from wall
-        elif rightState == 6:
-            RightEncoder.update()
-            setpoint = northHead # romi facing north
-            pv = head.get()
-            kp = 1  # Proportional gain
-            ki = 0.01  # Integral gain
-            t2 = ticks_ms()
-            dt = ticks_diff(t2,t1)/1000  # Time step
-            t1 = t2
-            
-            integral += (setpoint-pv)*dt
-            control = kp*(setpoint-pv) + ki*integral
-            RPWM = -18*(7.8/bat_level)   # print(control)
-
-            RightPWM = RPWM - control*15
-            
-            RightMotor.set_effort(RightPWM)
-
-            # <=, going backwards during this stage/state
-            if RightEncoder.get_position() <= stage6encoder or stage.get() == 7: 
-                rightState = 7
-                stage.put(7)
-                print("stage 7 R")
-            yield
-
-        # State 7: Turning to face cup (local east)
-        elif rightState == 7:
-            if eastHead - 0.02 <= 0:
-                eastMin = eastHead+6.26318
-            else:
-                eastMin = eastHead - 0.02
-            if head.get() > (eastMin) or head.get() < (eastHead+0.02)\
-                 or stage.get() == 8:
-                RightPWM = 0
-                RightMotor.set_effort(RightPWM)
-                RightEncoder.zero()
-                # Setup for PI controller for next state
-                integral = 0
-                t1 = ticks_ms()
-                rightState = 8
-                stage.put(8)
-                print("stage 8 R")
-            elif head.get() < (eastMin) and head.get() > (eastHead + 3.14):
-                RightPWM = -10
-                RightMotor.set_effort(RightPWM)
-            else:
-                RightPWM = 10
-                RightMotor.set_effort(RightPWM)
-            yield 
-
-        # State 8: going east and pushing cup
-        elif rightState == 8:
-            RightEncoder.update()
-            setpoint = 0 # Central centroid
-            pv = cent.get()
-            kp = 2  # Proportional gain
-            ki = 0.1  # Integral gain
-            t2 = ticks_ms()
-            dt = ticks_diff(t2,t1)/1000  # Time step
-            t1 = t2
-            
-            integral += (pv-setpoint)*dt
-            control = kp*(pv-setpoint) + ki*integral
-            RPWM = 10*(7.8/bat_level)   # print(control)
-
-            RightPWM = RPWM + control*10
-            if RightPWM > 20:
-                RightPWM = 20
-
-            RightMotor.set_effort(RightPWM)
-
-            if RightEncoder.get_position() >= stage8encoder or stage.get() == 9:
-                stage.put(9)
-                rightState = 9
-                print("stage 9 R")
-            yield
-        
-        # State 9: Turning to face local north
-        elif rightState == 9:
-            if head.get() > (northHead-0.02) and head.get() < (northHead+0.02)\
-                  or stage.get() == 10:
-                RightPWM = 0
-                RightMotor.set_effort(RightPWM)
-                RightEncoder.zero()
-                # Setup for PI controller for next state
-                integral = 0
-                t1 = ticks_ms()
-                rightState = 10
-                stage.put(10)
-                print("stage 10 R")
-            elif head.get() < (northHead-0.02) and head.get() > (northHead - 3.14):
-                RightPWM = -10
-                RightMotor.set_effort(RightPWM)
-            else:
-                RightPWM = 10
-                RightMotor.set_effort(RightPWM)
-            yield 
-
-        # State 10: Going north until line is hit
-        elif rightState == 10:
-            RightEncoder.update()
-            setpoint = 0 # Central centroid
-            pv = cent.get()
-            kp = 2  # Proportional gain
-            ki = 0.1  # Integral gain
-            t2 = ticks_ms()
-            dt = ticks_diff(t2,t1)/1000  # Time step
-            t1 = t2
-            
-            integral += (pv-setpoint)*dt
-            control = kp*(pv-setpoint) + ki*integral
-            RPWM = 10*(7.8/bat_level)   # print(control)
-
-            RightPWM = RPWM + control*10
-            if RightPWM > 20:
-                RightPWM = 20
-
-            RightMotor.set_effort(RightPWM)
-
-            if ((RightEncoder.get_position() >= stage10encoder)\
-                    and (lineType.get() == 1 or lineType.get() ==3)) \
-                    or stage.get() == 11:
-                pv = 0 
-                stage.put(11)
-                rightState = 11
-                print("stage 11 R")
-            yield
-        
-        # State 11: turning to face west
-        elif rightState == 11:
-            if head.get() > (westHead-0.02) and head.get() < (westHead+0.02) \
-                or stage.get() == 12:
-                RightPWM = 0
-                RightMotor.set_effort(RightPWM)
-                RightEncoder.zero()
-                # Setup for PI controller for next state
-                integral = 0
-                t1 = ticks_ms()
-                rightState = 12
-                stage.put(12)
-                print("stage 12 R")
-            elif head.get() > (westHead+0.02) and head.get() < (westHead + 3.14):
-                RightPWM = 10
-                RightMotor.set_effort(RightPWM)
-            else:
-                RightPWM = -10
-                RightMotor.set_effort(RightPWM)
-            yield 
-        
-        # State 12: Line following back to the start
-        elif rightState == 12:
-            RightEncoder.update()
-            setpoint = 0 # Central centroid
-            pv = cent.get()
-            kp = 2  # Proportional gain
-            ki = 0.1  # Integral gain
             t2 = ticks_ms()
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
