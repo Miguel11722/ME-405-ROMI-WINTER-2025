@@ -68,8 +68,8 @@ def rightMotor(shares):
             RightEncoder.update()
             setpoint = 0 # Central centroid
             pv = cent.get()
-            kp = 4 # Proportional gain
-            ki = 0.01  # Integral gain
+            kp = 3.5 # Proportional gain
+            ki = 0.1  # Integral gain
             t2 = ticks_ms()
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
@@ -136,7 +136,6 @@ def rightMotor(shares):
             if RightEncoder.get_position() >= stage3encoder or stage.get() == 4:
                 stage.put(4)
                 rightState = 4
-                print("stage 4 R")
 
             yield
 
@@ -152,7 +151,6 @@ def rightMotor(shares):
                 t1 = ticks_ms()
                 rightState = 5
                 stage.put(5)
-                print("stage 5 R")
             elif head.get() < (northHead-0.02) and head.get() > (northHead - 3.14):
                 RightPWM = -15
                 RightMotor.set_effort(RightPWM)
@@ -176,7 +174,7 @@ def rightMotor(shares):
             integral += (setpoint-pv)*dt
             control = kp*(setpoint-pv) + ki*integral
             RPWM = 23*(7.8/bat_level)
-
+            
             RightPWM = RPWM + control*15
             if RightPWM > 30:
                 RightPWM = 30
