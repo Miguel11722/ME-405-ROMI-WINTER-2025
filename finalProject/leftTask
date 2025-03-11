@@ -235,7 +235,7 @@ def leftMotor(shares):
                 eastMin = eastHead+6.26318
             else:
                 eastMin = eastHead - 0.02
-            if head.get() > (eastMin) and head.get() < (eastHead+0.02)\
+            if head.get() > (eastMin) or head.get() < (eastHead+0.02)\
                  or stage.get() == 8:
                 LeftPWM = 0
                 LeftMotor.set_effort(LeftPWM)
@@ -246,7 +246,7 @@ def leftMotor(shares):
                 leftState = 8
                 stage.put(8)
                 print("stage 8 L")
-            elif head.get() < (eastHead-0.02) and head.get() > (eastHead + 3.14):
+            elif head.get() < (eastMin) and head.get() > (eastHead + 3.14):
                 LeftPWM = 10
                 LeftMotor.set_effort(LeftPWM)
             else:
@@ -274,7 +274,7 @@ def leftMotor(shares):
             
             LeftMotor.set_effort(LeftPWM)
 
-            if LeftEncoder.get_position() >= stage8encoder:
+            if LeftEncoder.get_position() >= stage8encoder or stage.get() == 9:
                 stage.put(9)
                 leftState = 9
                 print("stage 9 L")
@@ -292,7 +292,7 @@ def leftMotor(shares):
                 t1 = ticks_ms()
                 leftState = 10
                 stage.put(10)
-                print("stage 5 L")
+                print("stage 10 L")
             elif head.get() < (northHead-0.02) and head.get() > (northHead - 3.14):
                 LeftPWM = 10
                 LeftMotor.set_effort(LeftPWM)
@@ -342,7 +342,7 @@ def leftMotor(shares):
                 t1 = ticks_ms()
                 leftState = 12
                 stage.put(12)
-                print("stage 3 L")
+                print("stage 12 L")
             elif head.get() > (westHead+0.02) and head.get() < (westHead + 3.14):
                 LeftPWM = -10
                 LeftMotor.set_effort(LeftPWM)
