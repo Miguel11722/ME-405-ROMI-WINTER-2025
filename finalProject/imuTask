@@ -12,7 +12,7 @@ def BNO(shares):
             bno = BNO055.IMU(i2c)
             bno.mode("CONFIG")
             bno.write_coef()
-            bno.mode("NDOF")
+            bno.mode("IMU")
             east.put(bno.heading())
             BNOstate = 1
             yield
