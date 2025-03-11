@@ -55,7 +55,7 @@ def rightMotor(shares):
             stage.put(1)
             t1 = ticks_ms()
             integral = 0
-            bat_level = batVolt.get()*3.3/4095*14.7/4.7
+            bat_level = batVolt.get()
             print("stage 1 R")
             yield
         
@@ -78,6 +78,7 @@ def rightMotor(shares):
             integral += (setpoint-pv)*dt
             control = kp*(setpoint-pv) + ki*integral
             RPWM = 20*(7.8/bat_level)   # print(control)
+            #print("RPWM: ", RPWM)
 
             RightPWM = RPWM + control*15
             if RightPWM > 30:
@@ -118,8 +119,8 @@ def rightMotor(shares):
         # State 3: Traveling along grid. Controlling for local west heading.
         elif rightState == 3:
             RightEncoder.update()
-            setpoint = 0 # Central centroid
-            pv = cent.get()
+            setpoint = westHead # Central centroid
+            pv = head.get()
             kp = 2  # Proportional gain
             ki = 0.01  # Integral gain
             t2 = ticks_ms()
@@ -172,8 +173,8 @@ def rightMotor(shares):
             RightEncoder.update()
             setpoint = 0 # Central centroid
             pv = cent.get()
-            kp = 2  # Proportional gain
-            ki = 0.1  # Integral gain
+            kp = 1  # Proportional gain
+            ki = 0.01  # Integral gain
             t2 = ticks_ms()
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
@@ -188,9 +189,6 @@ def rightMotor(shares):
             
             RightMotor.set_effort(RightPWM)
 
-            # NOTE: this state will be changed due to Romi hitting a wall.
-            # As such, there is no state change here. It happens above at the
-            # bump sensor check.
             if bumped.get() == 2 or stage.get() == 6:
                 print("stage 6 R")
                 RightEncoder.zero()
@@ -248,7 +246,7 @@ def rightMotor(shares):
             else:
                 RightPWM = 10
                 RightMotor.set_effort(RightPWM)
-            yield  
+            yield 
 
         # State 8: going east and pushing cup
         elif rightState == 8:
