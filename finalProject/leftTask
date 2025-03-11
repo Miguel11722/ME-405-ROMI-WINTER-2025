@@ -12,7 +12,7 @@ def leftMotor(shares):
     if eastHead >= 0 and eastHead < (3.14159/2): # q1
         northHead = eastHead + (3*3.14159/2)
         southHead = eastHead + (3.14159/2)
-        westHead = eastHead + 3.14159
+        westHead = eastHead + 3.14159 - 0.1
     elif eastHead >= (3.14159/2) and eastHead < 3.14159: # q4
         northHead = eastHead - 3.14159/2
         southHead = eastHead + 3.14159/2
@@ -72,15 +72,15 @@ def leftMotor(shares):
             LeftEncoder.update()
             setpoint = 0 # Central centroid
             pv = cent.get()
-            kp = 3  # Proportional gain
-            ki = 0.001  # Integral gain
+            kp = 4  # Proportional gain
+            ki = 0.01  # Integral gain
             t2 = ticks_ms()
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
             
             integral += (pv-setpoint)*dt
             control = kp*(pv-setpoint) + ki*integral
-            LPWM = 25*(7.8/bat_level)
+            LPWM = 27*(7.8/bat_level)
 
             LeftPWM = LPWM + control*15
             if LeftPWM > 30:
@@ -169,8 +169,8 @@ def leftMotor(shares):
             LeftEncoder.update()
             setpoint = 0 # Central centroid
             pv = cent.get()
-            kp = 1  # Proportional gain
-            ki = 0.01  # Integral gain
+            kp = 3  # Proportional gain
+            ki = 0.001  # Integral gain
             t2 = ticks_ms()
             dt = ticks_diff(t2,t1)/1000  # Time step
             t1 = t2
@@ -178,7 +178,6 @@ def leftMotor(shares):
             integral += (pv-setpoint)*dt
             control = kp*(pv-setpoint) + ki*integral
             LPWM = 23*(7.8/bat_level)
-            #print("LPWM: ", LPWM)
 
             LeftPWM = LPWM + control*15
             
@@ -298,7 +297,7 @@ def leftMotor(shares):
             LeftEncoder.update()
             setpoint = northHead # facing north
             pv = head.get()
-            kp = 2 # Proportional gain
+            kp = 3 # Proportional gain
             ki = 0.001  # Integral gain
             t2 = ticks_ms()
             dt = ticks_diff(t2,t1)/1000  # Time step
