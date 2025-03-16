@@ -3,6 +3,7 @@
 # Table of Contents
 
 [Overview](#Overview)
+- [Pinout and Wiring Diagram](Pinout-and-Wiring-Diagram)
 
 [Videos](#videos)
 
@@ -50,6 +51,14 @@ In order, the stages are:
 Some of these stages duplicate the same activity, such as stages 2 and 11 both being tasks that turn Romi west, or stages 2, 4, 7, 9, and 11 all being strictly turn in place stages (shown in orange in the image above). However, due to time constraints, and in an effort to work sequentially through the course, we continued with this approach. We wanted to be able to dial in each stage as they came along, and didn't want to risk any tweaks that made a later stage work messing up an earlier stage that was already working properly. 
 
 In each stage where Romi is not just turning in place, we implemented a PI controller. Each of these controllers were tuned to the task Romi would complete during that stage, so we reused the line following constants for each line following task, and the heading constants for the heading following tasks.
+
+## Pinout and Wiring Diagram
+
+Below is an image showing the pinouts we used for Romi. The Designation column shows the peripheral that the pin is being used for. Red rows are pins we were told in a Piazza post to be off limits, and grey rows are pins that either are not connected or reserved for power and control. This helped us designate pins while planning how we would wire Romi. 
+
+![Romi Pinout](RomiPinout.png)
+
+The wiring diagram is shown below.
 
 # Videos
 
