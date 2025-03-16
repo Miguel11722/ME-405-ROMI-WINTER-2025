@@ -60,6 +60,8 @@ Below is an image showing the pinouts we used for Romi. The Designation column s
 
 The wiring diagram is shown below.
 
+![Romi Wiring Diagram](ME-405-ROMI-WIRING-DIAGRAM.pdf)
+
 # Videos
 
 These are the videos for the two completed runs our Romi had during the final test day.
