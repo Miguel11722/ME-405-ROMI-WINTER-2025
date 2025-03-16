@@ -2,12 +2,17 @@
 ## Overview
 
 ### Table of Contents
-
 [Videos](#videos)
+
 [Classes](#Classes)
+
 	[LineSensor](#LineSensor)
+	
 [Tasks](#Tasks)
-[Appendix](#Appendix)}
+
+[Appendix](#Appendix)
+
+
 ## Videos
 
 [Run 1](https://youtu.be/CR8xlK-HHFw)
