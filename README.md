@@ -58,7 +58,7 @@ Below is an image showing the pinouts we used for Romi. The Designation column s
 
 ![Romi Pinout](RomiPinout.png)
 
-The wiring diagram is shown below.
+The wiring diagram is linked below.
 
 ![Romi Wiring Diagram](ME-405-ROMI-WIRING-DIAGRAM.pdf)
 
