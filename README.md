@@ -54,6 +54,7 @@ The task diagram is shown below.
 ## gcTask
 
 **Finite State Diagram:**
+
 ![Finite State Diagram for gcTask](gcTaskFSM.png)
 
 **Description:**
@@ -66,6 +67,7 @@ Priority:
 ## imuTask
 
 **Finite State Diagram:**
+
 ![Finite State Diagram for imuTask](imuTaskFSM.png)
 
 **Description:**
@@ -78,6 +80,7 @@ Priority:
 ## bumpTask
 
 **Finite State Diagram:**
+
 ![Finite State Diagram for bumpTask](bumpTaskFSM.png)
 
 **Description:**
@@ -87,6 +90,7 @@ Priority:
 ## leftTask
 
 **Finite State Diagram:**
+
 ![Finite State Diagram for leftTask](leftTaskFSM.png)
 
 **Description:**
@@ -99,6 +103,7 @@ Priority:
 ## lineTask
 
 **Finite State Diagram:**
+
 ![Finite State Diagram for lineTask](lineTaskFSM.png)
 
 **Description:**
@@ -111,6 +116,7 @@ Priority:
 ## rightTask
 
 **Finite State Diagram:**
+
 ![Finite State Diagram for rightTask](rightTaskFSM.png)
 
 **Description:**
