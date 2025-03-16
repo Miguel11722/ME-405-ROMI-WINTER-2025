@@ -6,7 +6,7 @@
 [Videos](#videos)
 
 [Classes](#Classes)
-- [Bump](#Bump)
+- [BumpSensor](#BumpSensor)
 - [Encoder](#Encoder)
 - [IMU](#IMU)
 - [LineSensor](#LineSensor)
@@ -34,7 +34,7 @@
 
 Each class is described below, with links to the corresponding file.
 
-### Bump
+### BumpSensor
 
 **Description:**
 
