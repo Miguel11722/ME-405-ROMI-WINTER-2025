@@ -1,17 +1,28 @@
 
-## Overview
+## Table of Contents
 
-### Table of Contents
+[Overview](#Overview)
+
 [Videos](#videos)
 
 [Classes](#Classes)
-
+- [Bump](#Bump)
+- [Encoder](#Encoder)
+- [IMU](#IMU)
 - [LineSensor](#LineSensor)
+- [Motor](#Motor)
 	
 [Tasks](#Tasks)
+- [gcTask](#gcTask)
+- [imuTask](#imuTask)
+- [bumpTask](#bumpTask)
+- [leftTask](#leftTask)
+- [lineTask](#lineTask)
+- [rightTask](#rightTask)
 
 [Appendix](#Appendix)
 
+## Overview
 
 ## Videos
 
@@ -22,6 +33,30 @@
 ## Classes
 
 Each class is described below, with links to the corresponding file.
+
+### Bump
+
+**Description:**
+
+**File Name:** bumpTask.py
+
+**Methods:**
+
+### Encoder
+
+**Description:**
+
+**File Name:** encoder.py
+
+**Methods:**
+
+### IMU
+
+**Description:**
+
+**File Name:** BNO055.py
+
+**Methods:**
 
 ### LineSensor
 
@@ -46,29 +81,6 @@ Each class is described below, with links to the corresponding file.
 	- lineType = 1: Normal line.
 	- lineType = 2: All readings are white.
 	- lineType = 3: 5 or more sensors read black.
-### IMU
-
-**Description:**
-
-**File Name:** BNO055.py
-
-**Methods:**
-
-### Bump
-
-**Description:**
-
-**File Name:** bumpTask.py
-
-**Methods:**
-
-### Encoder
-
-**Description:**
-
-**File Name:** encoder.py
-
-**Methods:**
 
 ### Motor
 
@@ -78,62 +90,72 @@ Each class is described below, with links to the corresponding file.
 
 **Methods:**
 
-
 ## Tasks
 
-### collector
+These are the tasks run by the scheduler in the main file. Each gets passed a tuple of shares by the scheduler when run.
+
+The tasks here are indexed by their file name rather than class name for ease of understanding which task does what. The class name used in main is included in the task description.
+
+### gcTask
 
 **Description:**
 
-**File Name:** gcTask.py
+Period:
+Priority:
+
+**Class Name:** collector
 
 **Methods:**
 
-### BumpSensor
+### imuTask
 
 **Description:**
 
-**File Name:** bumpsensor.py
+Period:
+Priority:
+
+**Class Name:** BNO
 
 **Methods:**
 
-### BNO
+### bumpTask
 
 **Description:**
 
-**File Name:** imuTask.py
+**Class Name:** Bump
 
 **Methods:**
 
-### BumpSensor
+### leftTask
 
 **Description:**
 
-**File Name:** bumpsensor.py
+Period:
+Priority:
+
+**Class Name:** leftMotor
 
 **Methods:**
 
-### leftMotor
+### lineTask
 
 **Description:**
 
-**File Name:** leftTask.py
+Period:
+Priority:
+
+**Class Name:** lineSensor
 
 **Methods:**
 
-### lineSensor
+### rightTask
 
 **Description:**
 
-**File Name:** lineTask.py
+Period:
+Priority:
 
-**Methods:**
-
-### rightMotor
-
-**Description:**
-
-**File Name:** rightTask.py
+**Class Name:** rightMotor
 
 **Methods:**
 
