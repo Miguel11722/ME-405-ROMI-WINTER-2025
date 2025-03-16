@@ -3,19 +3,9 @@
 # Table of Contents
 
 [Overview](#Overview)
-- [Shares](#Shares)
-- [Task Diagram](#Task Diagram)
-- [Finite State Machines](#Finite State Machines)
 
 [Videos](#videos)
 
-[Classes](#Classes)
-- [BumpSensor](#BumpSensor)
-- [Encoder](#Encoder)
-- [IMU](#IMU)
-- [LineSensor](#LineSensor)
-- [Motor](#Motor)
-	
 [Tasks](#Tasks)
 - [gcTask](#gcTask)
 - [imuTask](#imuTask)
@@ -24,17 +14,19 @@
 - [lineTask](#lineTask)
 - [rightTask](#rightTask)
 
+[Classes](#Classes)
+- [BumpSensor](#BumpSensor)
+- [Encoder](#Encoder)
+- [IMU](#IMU)
+- [LineSensor](#LineSensor)
+- [Motor](#Motor)
+	
+
 [Appendix](#Appendix)
 
 # Overview
 
-## Shares
 
-## Task Diagram
-
-![Task Diagram for the ME 405 Term Project](TaskDiagram.png)
-
-## Finite State Machines
 
 # Videos
 
@@ -42,73 +34,27 @@
 
 [Run 2](https://youtu.be/JZjPs5Mh1RU)
 
-# Classes
-
-Each class is described below, with links to the corresponding file.
-
-## BumpSensor
-
-**Description:**
-
-**File Name:** bumpTask.py
-
-**Methods:**
-
-## Encoder
-
-**Description:**
-
-**File Name:** encoder.py
-
-**Methods:**
-
-## IMU
-
-**Description:**
-
-**File Name:** BNO055.py
-
-**Methods:**
-
-## LineSensor
-
-**Description:** This is a driver for a 7 channel analog line sensor array from Pololu.
-
-**File name:** analoglinesensor
-
-**Methods:**
-- LineSensor.init(CTRL,pin1,pin3,pin5,pin7,pin9,pin11,pin13): Initializes the line sensor.
-	- CTRL is the control pin
-	- pin1, pin3, etc. are the pins corresponding to the line sensor channels
-- LineSensor.calibrate(): Calibrates the line sensor white and black readings. This should only be run for debugging and testing purposes, and the desired calibration data should be coded in the initialization method. For us, that meant coding the array of black values to 300, since we found that to be around the lowest the line sensor would read while over the line in our final track.
-- LineSensor.update(): Updates the line sensor readings. Calls LineSensor.solve_centroid() and LineSensor.solve_lineType()
-- LineSensor.get_sensors(): Returns a list of the most recently updated sensor readings.
-- LineSensor.get_centroid(): Returns the centroid value from the most recent update.
-- LineSensor.get_lineType(): Returns the line type as an integer as determined from the most recent update.
-	- lineType = 1: Normal line.
-	- lineType = 2: All readings are white.
-	- lineType = 3: 5 or more sensors read black.
-- LineSensor.solve_centroid(): Takes the most recently updated line sensor readings and returns the centroid of the line sensor as a value away from 0, where 0 is the middle of the sensor. Negative centroid values indicate that the centroid is in the first half of the sensors (1-5) whereas positive centroid values indicate that the centroid is in the second half of the sensors (9-13).
-- LineSensor.solve_lineType(): Solves and returns the type of line as determined from the most recently updated line sensor readings.
-	- lineType = 1: Normal line.
-	- lineType = 2: All readings are white.
-	- lineType = 3: 5 or more sensors read black.
-
-## Motor
-
-**Description:**
-
-**File Name:** motor.py
-
-**Methods:**
-
 # Tasks
 
-These are the tasks run by the scheduler in the main file. Each gets passed a tuple of shares by the scheduler when run.
+These are the tasks run by the scheduler in the main file. Each gets passed a tuple of shares by the scheduler when run. These shares are:
+- **batLevel:** The current voltage of the battery. Shared between leftTask and rightTask.
+- **bumped:** Shares whether or not the bump sensors have been pressed. Shared between bumpTask, leftTask, and rightTask
+- **centroid:** The most recently updated centroid reading from the line sensor. Shared between lineTask, leftTask, and rightTask
+- **east:** The initial IMU heading reading when main is run. Shared between imuTask, leftTask, and rightTask.
+- **heading:** The most recently updated IMU heading reading. Shared between imuTask, leftTask, and rightTask.
+- **lineType:** The most recently updated type of line the line sensor read. Shared between lineTask, leftTask, and rightTask
+- **stage:** The current stage of the course. This allows the left and right tasks to be in the same stage and not get out of sync. Shared between leftTask, rightTask and bumpTask.
 
-The tasks here are indexed by their file name rather than class name for ease of understanding which task does what. The class name used in main is included in the task description.
+The tasks here are indexed by their file name rather than class name for ease of understanding which task does what. The class name is included in the task description. Each task also has a finite state diagram in its description.
+
+The task diagram is shown below.
+
+![Task Diagram for ME 405 term project](TaskDiagram.png)
 
 ## gcTask
+
+**Finite State Diagram:**
+![Finite State Diagram for gcTask](gcTaskFSM.png)
 
 **Description:**
 
@@ -117,9 +63,10 @@ Priority:
 
 **Class Name:** collector
 
-**Methods:**
-
 ## imuTask
+
+**Finite State Diagram:**
+![Finite State Diagram for imuTask](imuTaskFSM.png)
 
 **Description:**
 
@@ -128,17 +75,19 @@ Priority:
 
 **Class Name:** BNO
 
-**Methods:**
-
 ## bumpTask
+
+**Finite State Diagram:**
+![Finite State Diagram for bumpTask](bumpTaskFSM.png)
 
 **Description:**
 
 **Class Name:** Bump
 
-**Methods:**
-
 ## leftTask
+
+**Finite State Diagram:**
+![Finite State Diagram for leftTask](leftTaskFSM.png)
 
 **Description:**
 
@@ -147,9 +96,10 @@ Priority:
 
 **Class Name:** leftMotor
 
-**Methods:**
-
 ## lineTask
+
+**Finite State Diagram:**
+![Finite State Diagram for lineTask](lineTaskFSM.png)
 
 **Description:**
 
@@ -158,9 +108,10 @@ Priority:
 
 **Class Name:** lineSensor
 
-**Methods:**
-
 ## rightTask
+
+**Finite State Diagram:**
+![Finite State Diagram for rightTask](rightTaskFSM.png)
 
 **Description:**
 
@@ -169,6 +120,38 @@ Priority:
 
 **Class Name:** rightMotor
 
-**Methods:**
+# Classes
+
+Each class is described below, with links to the corresponding file. The classes are indexed by class name, with the file name included in the task description.
+
+## BumpSensor
+
+**Description:** A driver for the bump sensors on a Pololu Romi robot.
+
+**File Name:** bumpTask.py
+
+## Encoder
+
+**Description:** A driver for the encoders on a Pololu Romi robot.
+
+**File Name:** encoder.py
+
+## IMU
+
+**Description:** A driver for an Adafruit BNO055 IMU.
+
+**File Name:** BNO055.py
+
+## LineSensor
+
+**Description:** A driver for a 7 channel analog line sensor array from Pololu.
+
+**File name:** analoglinesensor
+
+## Motor
+
+**Description:** A driver for the motors on a Pololu Romi robot.
+
+**File Name:** motor.py
 
 # Appendix
