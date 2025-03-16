@@ -1,9 +1,11 @@
-
 # ME-405-ROMI
 
 # Table of Contents
 
 [Overview](#Overview)
+- [Shares](#Shares)
+- [Task Diagrams](#Task Diagrams)
+- [Finite State Machines](#Finite State Machines)
 
 [Videos](#videos)
 
@@ -25,6 +27,12 @@
 [Appendix](#Appendix)
 
 # Overview
+
+## Shares
+
+## Task Diagrams
+
+## Finite State Machines
 
 # Videos
 
