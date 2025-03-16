@@ -4,7 +4,7 @@
 
 [Overview](#Overview)
 - [Shares](#Shares)
-- [Task Diagrams](#Task Diagrams)
+- [Task Diagram](#Task Diagram)
 - [Finite State Machines](#Finite State Machines)
 
 [Videos](#videos)
@@ -30,7 +30,9 @@
 
 ## Shares
 
-## Task Diagrams
+## Task Diagram
+
+![Task Diagram for the ME 405 Term Project](TaskDiagram.png)
 
 ## Finite State Machines
 
