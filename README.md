@@ -6,7 +6,7 @@
 
 [Classes](#Classes)
 
-	[LineSensor](#LineSensor)
+- [LineSensor](#LineSensor)
 	
 [Tasks](#Tasks)
 
