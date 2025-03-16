@@ -1,5 +1,7 @@
 
-## Table of Contents
+# ME-405-ROMI
+
+# Table of Contents
 
 [Overview](#Overview)
 
@@ -22,19 +24,19 @@
 
 [Appendix](#Appendix)
 
-## Overview
+# Overview
 
-## Videos
+# Videos
 
 [Run 1](https://youtu.be/CR8xlK-HHFw)
 
 [Run 2](https://youtu.be/JZjPs5Mh1RU)
 
-## Classes
+# Classes
 
 Each class is described below, with links to the corresponding file.
 
-### BumpSensor
+## BumpSensor
 
 **Description:**
 
@@ -42,7 +44,7 @@ Each class is described below, with links to the corresponding file.
 
 **Methods:**
 
-### Encoder
+## Encoder
 
 **Description:**
 
@@ -50,7 +52,7 @@ Each class is described below, with links to the corresponding file.
 
 **Methods:**
 
-### IMU
+## IMU
 
 **Description:**
 
@@ -58,7 +60,7 @@ Each class is described below, with links to the corresponding file.
 
 **Methods:**
 
-### LineSensor
+## LineSensor
 
 **Description:** This is a driver for a 7 channel analog line sensor array from Pololu.
 
@@ -82,7 +84,7 @@ Each class is described below, with links to the corresponding file.
 	- lineType = 2: All readings are white.
 	- lineType = 3: 5 or more sensors read black.
 
-### Motor
+## Motor
 
 **Description:**
 
@@ -90,13 +92,13 @@ Each class is described below, with links to the corresponding file.
 
 **Methods:**
 
-## Tasks
+# Tasks
 
 These are the tasks run by the scheduler in the main file. Each gets passed a tuple of shares by the scheduler when run.
 
 The tasks here are indexed by their file name rather than class name for ease of understanding which task does what. The class name used in main is included in the task description.
 
-### gcTask
+## gcTask
 
 **Description:**
 
@@ -107,7 +109,7 @@ Priority:
 
 **Methods:**
 
-### imuTask
+## imuTask
 
 **Description:**
 
@@ -118,7 +120,7 @@ Priority:
 
 **Methods:**
 
-### bumpTask
+## bumpTask
 
 **Description:**
 
@@ -126,7 +128,7 @@ Priority:
 
 **Methods:**
 
-### leftTask
+## leftTask
 
 **Description:**
 
@@ -137,7 +139,7 @@ Priority:
 
 **Methods:**
 
-### lineTask
+## lineTask
 
 **Description:**
 
@@ -148,7 +150,7 @@ Priority:
 
 **Methods:**
 
-### rightTask
+## rightTask
 
 **Description:**
 
@@ -159,4 +161,4 @@ Priority:
 
 **Methods:**
 
-## Appendix
+# Appendix
