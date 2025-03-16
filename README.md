@@ -3,7 +3,7 @@
 # Table of Contents
 
 [Overview](#Overview)
-- [Pinout and Wiring Diagram](Pinout-and-Wiring-Diagram)
+- [Pinout and Wiring Diagram](#Pinout-and-Wiring-Diagram)
 
 [Videos](#videos)
 
