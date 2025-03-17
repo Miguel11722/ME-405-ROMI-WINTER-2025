@@ -61,6 +61,7 @@ Below is an image showing the pinouts we used for Romi. The Designation column s
 The wiring diagram is linked below.
 
 ![Romi Wiring Diagram](ME-405-ROMI-WIRING-DIAGRAM.pdf)
+
 The wiring diagram shows all logic and power connections in relation to the specific pins they are connected to and referenced in the code. To reduce the complexity of the wiring relations, the pins are subdivided into the connections which are paired respectively in each component. 
 
 # Videos
